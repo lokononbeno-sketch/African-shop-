@@ -1,521 +1,205 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#171717">
-  <title>African Shop | Le commerce africain</title>
-  <style>
-    :root {
-      --orange: #f47721;
-      --black: #171717;
-      --cream: #fff8f1;
-      --muted: #777;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171717">
+<meta name="description" content="African Shop : les boutiques de chez nous, à portée de WhatsApp. Découvre des produits et commande directement auprès des commerçants.">
+<title>African Shop | Le commerce africain</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23171717'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E%F0%9F%9B%8D%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<script>
+window.addEventListener("error", function (e) {
+  var d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99;background:#b4472d;color:#fff;padding:10px 14px;font:14px system-ui";
+  d.textContent = "Erreur : " + e.message + " (" + String(e.filename || "").split("/").pop() + ", ligne " + e.lineno + ")";
+  document.documentElement.appendChild(d);
+});
+</script>
+<style>
+:root{
+  --ink:#171717; --paper:#faf5ea; --card:#fffdf8; --line:#e7dcc4; --muted:#6a6252; --text:#1d1b16;
+  --terre:#b4472d; --or:#e7a62c; --vert:#1f5b3a; --wa:#168a4b; --sur-wa:#fff; --creme:#f6ecd6;
+}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#121110; --card:#1c1a17; --line:#33302a; --muted:#a79f8d; --text:#f3ecdc; --creme:#2a261f; --wa:#2bb673; --sur-wa:#07140d}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--paper);color:var(--text);
+  -webkit-text-size-adjust:100%;padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+a{color:inherit}
+img{max-width:100%;display:block}
+.serif,h1,h2,h3{font-family:"Iowan Old Style",Palatino,"Palatino Linotype",Georgia,serif;letter-spacing:-.01em}
+.wrap{max-width:980px;margin:0 auto;padding:0 18px}
+:focus-visible{outline:3px solid var(--or);outline-offset:2px}
 
-    * { box-sizing: border-box; }
+/* Motif pagne */
+.wax{height:14px;background:
+  conic-gradient(from 45deg at 50% 50%,var(--terre) 0 25%,var(--or) 0 50%,var(--vert) 0 75%,var(--ink) 0) 0 0/14px 14px}
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      color: var(--black);
-    }
+/* En-tête */
+header.top{position:sticky;top:0;z-index:30;background:var(--ink);color:#f4ecd9;padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.marque{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;letter-spacing:.14em;font-size:.95rem}
+.marque i{width:26px;height:26px;border-radius:7px;display:block;background:
+  conic-gradient(from 45deg at 50% 50%,var(--terre) 0 25%,var(--or) 0 50%,var(--vert) 0 75%,#f4ecd9 0) 0 0/13px 13px}
+.top nav{display:none;gap:22px}
+.top nav a{text-decoration:none;font-size:.92rem;opacity:.85;padding:6px 0}
+.top nav a:hover,.top nav a.actif{opacity:1;box-shadow:0 2px 0 var(--or)}
+.top .loupe{width:44px;height:44px;display:grid;place-items:center;text-decoration:none;font-size:1.2rem;margin-right:-8px}
 
-    header {
-      background: var(--black);
-      color: white;
-      padding: 18px 16px;
-    }
+/* Hero */
+.hero{background:var(--ink);color:#f4ecd9;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-90px;top:-70px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,var(--or),var(--terre) 70%);opacity:.9}
+.hero::after{content:"";position:absolute;right:20px;top:150px;width:150px;height:150px;border-radius:50%;border:14px solid var(--vert);opacity:.75}
+.hero .wrap{position:relative;z-index:1;padding-top:44px;padding-bottom:44px}
+.eyebrow{font-size:.74rem;letter-spacing:.2em;font-weight:700;color:var(--or);text-transform:uppercase}
+.hero h1{font-size:clamp(2.1rem,9.5vw,3.5rem);line-height:1.04;margin:14px 0 14px;max-width:15ch}
+.hero h1 mark{background:linear-gradient(transparent 62%,var(--terre) 62%);color:inherit;padding:0 2px}
+.hero p.sous{max-width:34ch;color:#d9cfb8;font-size:1.02rem}
+.boutons{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 20px;border-radius:12px;border:2px solid var(--terre);background:var(--terre);color:#fff;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+.btn.clair{background:transparent;border-color:currentColor}
+.hero .btn.clair{color:#f4ecd9}
+.btn.wa{background:var(--wa);border-color:var(--wa);color:var(--sur-wa)}
+.btn.sec{background:transparent;color:var(--terre)}
+.btn.bloc{display:flex;width:100%}
 
-    .brand {
-      font-size: 25px;
-      font-weight: 900;
-      letter-spacing: -1px;
-    }
+/* Réassurance */
+.rassure{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:-22px 0 8px;position:relative;z-index:2}
+.rassure div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 10px;text-align:center;font-size:.8rem;font-weight:600;line-height:1.25;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.rassure span{display:block;font-size:1.4rem;margin-bottom:4px}
 
-    .brand span { color: var(--orange); }
+/* Sections */
+section.s{padding:34px 0 6px}
+.s h2{font-size:1.5rem;line-height:1.15}
+.s .tete{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.s .tete a{font-size:.9rem;font-weight:700;color:var(--terre);text-decoration:none;white-space:nowrap}
+.chips{display:flex;gap:10px;overflow-x:auto;padding:2px 18px 10px;margin:0 -18px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px;border-radius:99px;background:var(--card);border:1.5px solid var(--line);text-decoration:none;font-weight:600;font-size:.92rem}
+.chip.actif{background:var(--ink);color:#f4ecd9;border-color:var(--ink)}
 
-    .tagline {
-      color: #ddd;
-      font-size: 12px;
-      margin-top: 5px;
-    }
+/* Cartes boutiques */
+.bouts{display:grid;gap:12px}
+.bout{display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;text-decoration:none}
+.bout h3{font-size:1.05rem;line-height:1.2}
+.bout p{font-size:.84rem;color:var(--muted);margin-top:2px}
+.bout .go{margin-left:auto;font-size:1.3rem;color:var(--terre);font-weight:700}
+.av{position:relative;flex:none;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;overflow:hidden;
+  background:hsl(var(--h) 45% 30%);color:#fff;font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.av.g{width:72px;height:72px;border-radius:20px;font-size:1.3rem}
 
-    .search {
-      display: flex;
-      gap: 8px;
-      margin-top: 17px;
-    }
+/* Cartes produits */
+.prods{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.prod{position:relative;display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;padding-bottom:12px}
+.prod h3{font-size:.98rem;line-height:1.25;margin:10px 12px 2px;font-family:system-ui,sans-serif;font-weight:700;letter-spacing:0}
+.prod .prix{font-weight:800;color:var(--terre);margin:0 12px}
+.prod .de{font-size:.78rem;color:var(--muted);margin:2px 12px 0}
+.vis{position:relative;aspect-ratio:1/1;display:grid;place-items:center;font-size:3rem;
+  background:linear-gradient(150deg,hsl(var(--h) 55% 62%),hsl(calc(var(--h) + 35) 50% 40%))}
+.vis img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tag{position:absolute;top:8px;left:8px;z-index:2;font-style:normal;font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--or);padding:3px 8px;border-radius:99px}
+.rupture{position:absolute;inset:0;z-index:1;display:grid;place-items:center;background:rgba(18,17,16,.62);color:#fff;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.8rem}
 
-    input, select, button {
-      font: inherit;
-    }
+/* Comment ça marche */
+.etapes{display:grid;gap:12px;counter-reset:e}
+.etape{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.etape::before{counter-increment:e;content:counter(e);flex:none;width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--or);display:grid;place-items:center;font-weight:800}
+.etape h3{font-size:1.02rem;margin-bottom:2px}
+.etape p{font-size:.92rem;color:var(--muted)}
 
-    .search input {
-      width: 100%;
-      min-width: 0;
-      padding: 12px;
-      border: 0;
-      border-radius: 9px;
-    }
+/* Bandeau commerçant */
+.vendre{margin:34px 0 0;background:var(--ink);color:#f4ecd9;border-radius:22px;overflow:hidden}
+.vendre .in{padding:26px 22px}
+.vendre h2{font-size:1.5rem;line-height:1.15;margin-bottom:8px}
+.vendre p{color:#d9cfb8;margin-bottom:18px;max-width:42ch}
 
-    button {
-      cursor: pointer;
-      border: 0;
-      border-radius: 9px;
-      padding: 11px 14px;
-      font-weight: bold;
-    }
+/* Pages */
+.page{padding:22px 0 10px}
+.fil{font-size:.86rem;color:var(--muted);margin-bottom:14px}
+.fil a{color:var(--terre);font-weight:700;text-decoration:none}
+.page h1{font-size:1.8rem;line-height:1.12;margin-bottom:8px}
+.page .lead{color:var(--muted);margin-bottom:18px}
+.fiche{display:grid;gap:18px}
+.fiche .vis{border-radius:20px;font-size:6rem;aspect-ratio:4/3}
+.fiche .prix{font-size:1.7rem;font-weight:800;color:var(--terre)}
+.lien-b{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);background:var(--card);border-radius:14px;text-decoration:none}
+.lien-b small{display:block;color:var(--muted)}
+.qte{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font:inherit;font-size:1.3rem;font-weight:700;color:var(--text);cursor:pointer}
+.stepper output{min-width:34px;text-align:center;font-weight:800;font-size:1.1rem}
+.total{font-weight:800;font-size:1.1rem}
+.infos{display:grid;gap:8px;font-size:.92rem}
+.infos div{display:flex;gap:10px;color:var(--muted)}
+.partage{background:var(--creme);border-radius:16px;padding:16px}
+.partage p{font-size:.9rem;color:var(--muted);margin:2px 0 10px}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px}
+.pbtn{min-height:44px;padding:8px 16px;border-radius:99px;border:1.5px solid var(--ink);background:transparent;color:var(--text);font:inherit;font-weight:700;font-size:.9rem;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center}
+.recherche input{width:100%;font:inherit;padding:14px 16px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--text)}
+.recherche input:focus{border-color:var(--or);outline:none}
+.vide{padding:26px 0;color:var(--muted)}
+.texte h3{font-size:1.1rem;margin:20px 0 6px}
+.texte p{margin-bottom:8px;color:var(--text)}
+.liste-etapes{margin:12px 0 22px}
+.note{background:var(--creme);border-left:4px solid var(--or);border-radius:0 12px 12px 0;padding:10px 14px;font-size:.88rem;margin:0 0 14px}
 
-    .orange {
-      background: var(--orange);
-      color: #171717;
-    }
+/* Pied de page */
+footer.pied{margin-top:44px;background:var(--ink);color:#d9cfb8;font-size:.88rem}
+footer.pied .wrap{padding-top:26px;padding-bottom:26px}
+.pied .marque{color:#f4ecd9;margin-bottom:10px}
+.pied .liens{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0}
+.pied a{color:#f4ecd9}
 
-    .hero {
-      margin: 16px;
-      padding: 24px 20px;
-      border-radius: 18px;
-      color: white;
-      background:
-        radial-gradient(circle at top right, #81401c, transparent 50%),
-        #202020;
-    }
+/* Barre du bas (téléphone) */
+nav.bas{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;background:var(--ink);padding-bottom:env(safe-area-inset-bottom);border-top:2px solid var(--or)}
+nav.bas a{flex:1;text-align:center;text-decoration:none;color:#b9ae94;padding:8px 2px 9px;font-size:.72rem;font-weight:600}
+nav.bas a span{display:block;font-size:1.3rem;line-height:1.15}
+nav.bas a.actif{color:var(--or)}
 
-    .hero small {
-      color: var(--orange);
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-
-    .hero h1 {
-      font-size: 29px;
-      line-height: 1.15;
-      margin: 12px 0;
-    }
-
-    .hero p {
-      color: #e5e5e5;
-      line-height: 1.5;
-      font-size: 14px;
-    }
-
-    main { padding: 0 16px 90px; }
-
-    h2 { font-size: 20px; margin: 24px 0 14px; }
-
-    .categories {
-      display: flex;
-      gap: 9px;
-      overflow-x: auto;
-      padding-bottom: 5px;
-    }
-
-    .category {
-      background: white;
-      border: 1px solid #eee;
-      white-space: nowrap;
-    }
-
-    .category.active {
-      background: var(--orange);
-      border-color: var(--orange);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .product {
-      overflow: hidden;
-      background: white;
-      border-radius: 13px;
-      border: 1px solid #eee;
-    }
-
-    .product img {
-      display: block;
-      width: 100%;
-      height: 135px;
-      object-fit: cover;
-      background: #eee;
-    }
-
-    .product-info { padding: 11px; }
-
-    .product h3 {
-      font-size: 14px;
-      margin: 0 0 8px;
-    }
-
-    .price {
-      color: #c4530b;
-      font-size: 16px;
-      font-weight: 900;
-    }
-
-    .seller {
-      color: var(--muted);
-      font-size: 11px;
-      margin: 6px 0 10px;
-    }
-
-    .product button { width: 100%; font-size: 12px; }
-
-    .panel {
-      display: none;
-      background: white;
-      border-radius: 13px;
-      padding: 16px;
-      margin-top: 18px;
-    }
-
-    .panel.show { display: block; }
-
-    .cart-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 12px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 13px;
-    }
-
-    .empty {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-around;
-      background: white;
-      border-top: 1px solid #ddd;
-      padding: 10px 4px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-    }
-
-    .bottom-nav button {
-      background: white;
-      font-size: 11px;
-      padding: 7px 5px;
-    }
-
-    .bottom-nav button.active { color: #d95c0b; }
-
-    .notice {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .field {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 11px;
-      padding: 20px 10px;
-    }
-  </style>
+@media (min-width:760px){
+  body{padding-bottom:0}
+  nav.bas{display:none}
+  .top nav{display:flex}
+  .top .loupe{display:none}
+  .prods{grid-template-columns:repeat(4,1fr)}
+  .bouts{grid-template-columns:repeat(2,1fr)}
+  .etapes{grid-template-columns:repeat(3,1fr)}
+  .hero .wrap{padding-top:78px;padding-bottom:78px}
+  .hero::before{width:480px;height:480px;right:-120px;top:-120px}
+  .hero::after{right:90px;top:250px;width:220px;height:220px}
+  .fiche{grid-template-columns:1fr 1fr;align-items:start}
+  .chips{flex-wrap:wrap;overflow:visible;padding:0;margin:0 0 6px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
 </head>
 <body>
 
-<header>
-  <div class="brand">AFRICAN <span>SHOP</span></div>
-  <div class="tagline">Le commerce africain, à portée de main.</div>
+<header class="top"><div class="wrap">
+  <a class="marque" href="#/"><i></i>AFRICAN SHOP</a>
+  <nav aria-label="Navigation principale">
+    <a href="#/" data-n="accueil">Accueil</a>
+    <a href="#/boutiques" data-n="boutiques">Boutiques</a>
+    <a href="#/produits" data-n="produits">Produits</a>
+    <a href="#/ouvrir" data-n="vendre">Vendre</a>
+  </nav>
+  <a class="loupe" href="#/chercher" aria-label="Chercher">🔎</a>
+</div></header>
 
-  <div class="search">
-    <input id="search" type="search"
-      placeholder="Rechercher un produit..."
-      aria-label="Rechercher un produit">
-    <button class="orange" onclick="renderProducts()">Chercher</button>
-  </div>
-</header>
+<main id="app"></main>
 
-<section class="hero">
-  <small>BIENVENUE CHEZ AFRICAN SHOP</small>
-  <h1>Découvre.<br>Achète. Vends.</h1>
-  <p>Retrouve des produits et des commerçants près de chez toi.</p>
-  <button class="orange" onclick="showPage('products')">
-    Explorer la boutique →
-  </button>
-</section>
-
-<main>
-  <section id="productsPage">
-    <h2>Nos catégories</h2>
-    <div class="categories" id="categories"></div>
-
-    <h2>Produits à découvrir</h2>
-    <div class="grid" id="products"></div>
-  </section>
-
-  <section id="cartPage" class="panel">
-    <h2>🛒 Mon panier</h2>
-    <div id="cartItems"></div>
-    <h3 id="total">Total : 0 FCFA</h3>
-    <button class="orange" onclick="checkout()">
-      Continuer la commande
-    </button>
-    <p class="notice">
-      Démonstration uniquement : aucun paiement réel n'est effectué.
-    </p>
-  </section>
-
-  <section id="sellerPage" class="panel">
-    <h2>🏪 Espace vendeur</h2>
-    <p class="notice">
-      Voici un aperçu du formulaire de publication.
-      Les produits ajoutés ici restent dans cette démonstration locale.
-    </p>
-    <input class="field" id="newName" placeholder="Nom du produit">
-    <input class="field" id="newPrice" type="number"
-      min="1" placeholder="Prix en FCFA">
-    <select class="field" id="newCategory">
-      <option>Mode</option>
-      <option>Électronique</option>
-      <option>Maison</option>
-      <option>Beauté</option>
-      <option>Alimentation</option>
-    </select>
-    <button class="orange" onclick="addProduct()">
-      Ajouter le produit
-    </button>
-  </section>
-
-  <section id="ordersPage" class="panel">
-    <h2>📦 Mes commandes</h2>
-    <p class="empty">Tes commandes de démonstration apparaîtront ici.</p>
-  </section>
-
-  <footer>
-    African Shop © 2026 · Pensé pour le commerce africain 🇧🇯
-  </footer>
-</main>
-
-<nav class="bottom-nav">
-  <button class="active" onclick="showPage('products')">🏠<br>Accueil</button>
-  <button onclick="showPage('products')">🔎<br>Produits</button>
-  <button onclick="showPage('cart')">🛒 <span id="cartCount">0</span><br>Panier</button>
-  <button onclick="showPage('orders')">📦<br>Commandes</button>
-  <button onclick="showPage('seller')">🏪<br>Vendre</button>
+<nav class="bas" aria-label="Navigation du bas">
+  <a href="#/" data-n="accueil"><span>🏠</span>Accueil</a>
+  <a href="#/boutiques" data-n="boutiques"><span>🏪</span>Boutiques</a>
+  <a href="#/chercher" data-n="chercher"><span>🔎</span>Chercher</a>
+  <a href="#/ouvrir" data-n="vendre"><span>📦</span>Vendre</a>
 </nav>
 
-<script>
-  const productsData = [
-    {
-      id: 1, name: "Sac artisanal",
-      price: 6500, category: "Mode",
-      seller: "Créations du Bénin",
-      image: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=500&q=65"
-    },
-    {
-      id: 2, name: "Écouteurs sans fil",
-      price: 8500, category: "Électronique",
-      seller: "Tech Cotonou",
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=65"
-    },
-    {
-      id: 3, name: "Décoration artisanale",
-      price: 5000, category: "Maison",
-      seller: "Art et Tradition",
-      image: "https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?auto=format&fit=crop&w=500&q=65"
-    },
-    {
-      id: 4, name: "Soin naturel",
-      price: 3000, category: "Beauté",
-      seller: "Beauté Naturelle",
-      image: "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=500&q=65"
-    }
-  ];
-
-  let cart = [];
-  let selectedCategory = "Tout";
-  let nextId = 5;
-
-  const money = n =>
-    n.toLocaleString("fr-FR") + " FCFA";
-
-  function renderCategories() {
-    const names = ["Tout", ...new Set(
-      productsData.map(p => p.category)
-    )];
-
-    document.getElementById("categories").innerHTML =
-      names.map(name => `
-        <button class="category ${
-          selectedCategory === name ? "active" : ""
-        }" onclick="selectCategory('${name}')">
-          ${name}
-        </button>
-      `).join("");
-  }
-
-  function selectCategory(name) {
-    selectedCategory = name;
-    renderCategories();
-    renderProducts();
-  }
-
-  function renderProducts() {
-    const query = document.getElementById("search")
-      .value.trim().toLowerCase();
-
-    const filtered = productsData.filter(p =>
-      (selectedCategory === "Tout" ||
-       p.category === selectedCategory) &&
-      p.name.toLowerCase().includes(query)
-    );
-
-    document.getElementById("products").innerHTML =
-      filtered.length ? filtered.map(p => `
-        <article class="product">
-          <img src="${p.image}" alt="${p.name}" loading="lazy">
-          <div class="product-info">
-            <h3>${p.name}</h3>
-            <div class="price">${money(p.price)}</div>
-            <div class="seller">${p.seller}</div>
-            <button class="orange" onclick="addToCart(${p.id})">
-              Ajouter au panier
-            </button>
-          </div>
-        </article>
-      `).join("") :
-      '<p>Aucun produit trouvé.</p>';
-  }
-
-  function addToCart(id) {
-    const product = productsData.find(p => p.id === id);
-    if (!product) return;
-
-    const existing = cart.find(p => p.id === id);
-    if (existing) existing.quantity++;
-    else cart.push({ ...product, quantity: 1 });
-
-    renderCart();
-    alert("Produit ajouté au panier !");
-  }
-
-  function renderCart() {
-    document.getElementById("cartCount").textContent =
-      cart.reduce((sum, p) => sum + p.quantity, 0);
-
-    document.getElementById("cartItems").innerHTML =
-      cart.length ? cart.map(p => `
-        <div class="cart-row">
-          <span>${p.name} × ${p.quantity}</span>
-          <strong>${money(p.price * p.quantity)}</strong>
-          <button onclick="removeFromCart(${p.id})">✕</button>
-        </div>
-      `).join("") : '<p class="empty">Ton panier est vide.</p>';
-
-    const total = cart.reduce(
-      (sum, p) => sum + p.price * p.quantity, 0
-    );
-    document.getElementById("total").textContent =
-      "Total : " + money(total);
-  }
-
-  function removeFromCart(id) {
-    cart = cart.filter(p => p.id !== id);
-    renderCart();
-  }
-
-  function showPage(page) {
-    ["productsPage", "cartPage", "sellerPage", "ordersPage"]
-      .forEach(id => {
-        document.getElementById(id).classList.remove("show");
-      });
-
-    document.getElementById("productsPage").style.display =
-      page === "products" ? "block" : "none";
-
-    if (page !== "products") {
-      document.getElementById(page + "Page").classList.add("show");
-    }
-
-    document.querySelectorAll(".bottom-nav button")
-      .forEach(btn => btn.classList.remove("active"));
-
-    const index = {
-      products: 0, cart: 2, orders: 3, seller: 4
-    }[page] ?? 0;
-
-    document.querySelectorAll(".bottom-nav button")[index]
-      .classList.add("active");
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function addProduct() {
-    const name = document.getElementById("newName")
-      .value.trim();
-    const price = Number(
-      document.getElementById("newPrice").value
-    );
-    const category = document.getElementById("newCategory").value;
-
-    if (!name || !Number.isFinite(price) || price <= 0) {
-      alert("Entre un nom et un prix valide.");
-      return;
-    }
-
-    productsData.push({
-      id: nextId++,
-      name,
-      price,
-      category,
-      seller: "Ma boutique",
-      image: ""
-    });
-
-    // Image de remplacement pour les nouveaux produits.
-    productsData[productsData.length - 1].image =
-      "https://placehold.co/500x350/F47721/171717?text=African+Shop";
-
-    document.getElementById("newName").value = "";
-    document.getElementById("newPrice").value = "";
-
-    renderCategories();
-    renderProducts();
-    alert("Produit ajouté à la démonstration !");
-    showPage("products");
-  }
-
-  function checkout() {
-    if (!cart.length) {
-      alert("Ton panier est vide.");
-      return;
-    }
-
-    alert(
-      "La commande est prête pour la prochaine étape. " +
-      "Le paiement réel n'est pas encore activé."
-    );
-  }
-
-  document.getElementById("search")
-    .addEventListener("input", renderProducts);
-
-  renderCategories();
-  renderProducts();
-  renderCart();
-</script>
+<script src="boutiques.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
