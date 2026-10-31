@@ -50,15 +50,22 @@
     if(r.error)throw r.error;message("Produit ajouté au panier.");location.hash="#/panier";
   }
   async function cartPage(){
-    try{
-      const cartId=await getCart();if(!cartId)return;
-      const {data,error}=await client.from("cart_items").select("id,quantity,products(id,title,price_fcfa,image_path,stock_quantity,status,shops(name,status))").eq("cart_id",cartId);
-      if(error)throw error;
-      const items=(data||[]).filter(x=>x.products);
-      const total=items.reduce((s,x)=>s+x.quantity*x.products.price_fcfa,0);
-      wrap("Mon panier",items.length?`<div class="panel">${items.map(x=>`<div class="rowitem"><div><strong>${safe(x.products.title)}</strong><div class="muted">${money(x.products.price_fcfa)} · Quantité : ${x.quantity}</div></div><div>${money(x.products.price_fcfa*x.quantity)}<br><button class="pbtn" data-remove="${x.id}">Retirer</button></div></div>`).join("")}<h2>Total provisoire : ${money(total)}</h2><p class="muted">Le paiement en ligne est temporairement désactivé. Tu peux conserver ton panier.</p></div>`:'<div class="panel">Ton panier est vide pour le moment.</div>');
+    try {
+      const cartId=await getCart(); if(!cartId)return;
+      const q=await client.from("cart_items").select("id,quantity,products(id,title,price_fcfa,image_path,stock_quantity,status,shops(name,status))").eq("cart_id",cartId);
+      if(q.error)throw q.error;
+      const items=(q.data||[]).filter(x=>x.products);
+      const total=items.reduce((n,x)=>n+x.quantity*x.products.price_fcfa,0);
+      const ord=await client.from("orders").select("id,order_number,status,payment_status,total_fcfa,created_at").order("created_at",{ascending:false}).limit(20);
+      if(ord.error)throw ord.error;
+      const lines=items.map(x=>'<div class="rowitem"><div><strong>'+safe(x.products.title)+'</strong><div class="muted">'+money(x.products.price_fcfa)+' · Quantité : '+x.quantity+'</div></div><div>'+money(x.products.price_fcfa*x.quantity)+'<br><button class="pbtn" data-remove="'+x.id+'">Retirer</button></div></div>').join("");
+      const history=(ord.data||[]).map(o=>'<div class="rowitem"><div><strong>'+safe(o.order_number)+'</strong><div class="muted">'+new Date(o.created_at).toLocaleDateString("fr-FR")+' · '+safe(o.status)+' · '+safe(o.payment_status)+'</div><strong>'+money(o.total_fcfa)+'</strong></div>'+(o.status==="pending_payment"&&o.payment_status==="unpaid"?'<button class="pbtn" data-cancel-order="'+o.id+'">Annuler</button>':"")+'</div>').join("");
+      wrap("Mon panier",(items.length?'<div class="panel">'+lines+'<h2>Total provisoire : '+money(total)+'</h2><p class="muted">Paiement en ligne désactivé. La commande sera enregistrée comme non payée.</p><form id="checkout-form"><label>Nom complet</label><input name="buyer_name" required minlength="2"><label>Téléphone</label><input name="buyer_phone" required minlength="6"><label>Ville de livraison</label><input name="delivery_city" required minlength="2"><label>Adresse de livraison</label><textarea name="delivery_address" required minlength="3"></textarea><button class="btn" type="submit">Confirmer la commande (sans paiement)</button></form></div>':'<div class="panel">Ton panier est vide pour le moment.</div>')+'<div class="panel"><h2>Mes commandes récentes</h2>'+(history||'<p class="muted">Aucune commande pour le moment.</p>')+'</div>');
       document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=async()=>{const r=await client.from("cart_items").delete().eq("id",b.dataset.remove);if(r.error)message(r.error.message,true);else cartPage();});
-    }catch(e){wrap("Mon panier",`<div class="panel">${safe(e.message)}</div>`);}
+      const cf=document.querySelector("#checkout-form");
+      if(cf)cf.onsubmit=async e=>{e.preventDefault();const b=cf.querySelector('button[type="submit"]');b.disabled=true;try{const v=Object.fromEntries(new FormData(cf));const r=await client.rpc("checkout_cart",{p_buyer_name:v.buyer_name,p_buyer_phone:v.buyer_phone,p_delivery_city:v.delivery_city,p_delivery_address:v.delivery_address});if(r.error)throw r.error;message("Commande créée. Elle est en attente et non payée.");cartPage();}catch(err){message(err.message,true);b.disabled=false;}};
+      document.querySelectorAll("[data-cancel-order]").forEach(b=>b.onclick=async()=>{if(!confirm("Annuler cette commande et remettre les articles en stock ?"))return;b.disabled=true;const r=await client.rpc("cancel_unpaid_order",{p_order_id:b.dataset.cancelOrder});if(r.error){message(r.error.message,true);b.disabled=false;}else{message("Commande annulée et stock restauré.");cartPage();}});
+    } catch(e) { wrap("Mon panier",'<div class="panel">'+safe(e.message)+'</div>'); }
   }
   async function vendorPage(){
     const {data:{user}}=await client.auth.getUser();currentUser=user;
