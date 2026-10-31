@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171717">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.svg">
 <meta name="description" content="African Shop : les boutiques de chez nous, à portée de WhatsApp. Découvre des produits et commande directement auprès des commerçants.">
 <title>African Shop | Le commerce africain</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23171717'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E%F0%9F%9B%8D%EF%B8%8F%3C/text%3E%3C/svg%3E">
@@ -47,6 +51,9 @@ header.top{position:sticky;top:0;z-index:30;background:var(--ink);color:#f4ecd9;
 .top nav a{text-decoration:none;font-size:.92rem;opacity:.85;padding:6px 0}
 .top nav a:hover,.top nav a.actif{opacity:1;box-shadow:0 2px 0 var(--or)}
 .top .loupe{width:44px;height:44px;display:grid;place-items:center;text-decoration:none;font-size:1.2rem;margin-right:-8px}
+.install-app{min-height:40px;padding:7px 11px;border:1px solid var(--or);border-radius:10px;background:transparent;color:#f4ecd9;font:inherit;font-size:.82rem;font-weight:750;cursor:pointer;white-space:nowrap}
+.install-app[hidden]{display:none}
+@media(max-width:390px){.top .wrap{gap:8px}.marque{font-size:.82rem;letter-spacing:.09em}.install-app{font-size:.75rem;padding:6px 8px}}
 
 /* Hero */
 .hero{background:var(--ink);color:#f4ecd9;position:relative;overflow:hidden}
@@ -187,7 +194,7 @@ nav.bas a.actif{color:var(--or)}
     <a href="#/produits" data-n="produits">Produits</a>
     <a href="#/vendeur" data-n="vendre">Espace vendeur</a><a href="#/panier">Panier</a>
   </nav>
-  <a class="loupe" href="#/chercher" aria-label="Chercher">🔎</a>
+  <div style="display:flex;align-items:center;gap:8px"><button class="install-app" id="install-app" type="button">⬇ Installer</button><a class="loupe" href="#/chercher" aria-label="Chercher">🔎</a></div>
 </div></header>
 
 <main id="app"></main>
@@ -203,5 +210,6 @@ nav.bas a.actif{color:var(--or)}
 <script src="boutiques.js"></script>
 <script src="app.js"></script>
 <script src="commerce.js"></script>
+<script src="install.js"></script>
 </body>
 </html>
