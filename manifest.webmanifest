@@ -1,1 +1,21 @@
-{"id":"./","name":"African Shop — Le commerce africain","short_name":"African Shop","description":"Découvre les boutiques et produits du Bénin.","lang":"fr","start_url":"./","scope":"./","display":"standalone","background_color":"#faf5ea","theme_color":"#171717","orientation":"portrait","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+{
+  "id": "./",
+  "name": "African Shop — Le commerce africain",
+  "short_name": "African Shop",
+  "description": "Découvre les boutiques et produits du Bénin.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080b0e",
+  "theme_color": "#080b0e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
