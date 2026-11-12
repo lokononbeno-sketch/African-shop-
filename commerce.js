@@ -6,9 +6,9 @@
   const app = document.querySelector("#app");
   const money = n => Number(n || 0).toLocaleString("fr-FR") + " FCFA";
   const imageUrl = path => path ? client.storage.from("african-shop-products").getPublicUrl(path).data.publicUrl : "";
-  const productUrl = id => location.origin + location.pathname + "#/article/" + encodeURIComponent(id);
+  const productUrl = id => location.origin + location.pathname + "#/p/" + encodeURIComponent(id);
   const shareHtml = p => { const url=productUrl(p.id), text=encodeURIComponent(`${p.title} — ${money(p.price_fcfa)}\n${url}`); return `<div class="share"><a target="_blank" rel="noopener" href="https://wa.me/?text=${text}">Partager WhatsApp</a><a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}">Partager Facebook</a></div>`; };
-  const safe = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const safe = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const css = `<style>
   .commerce{max-width:900px;margin:26px auto;padding:0 18px 40px;color:var(--text)}
@@ -99,7 +99,7 @@
       const ord=await client.from("orders").select("id,order_number,status,payment_status,total_fcfa,created_at").order("created_at",{ascending:false}).limit(20);
       if(ord.error)throw ord.error;
       const lines=items.map(x=>'<div class="rowitem"><div><strong>'+safe(x.products.title)+'</strong><div class="muted">'+money(x.products.price_fcfa)+' · Quantité : '+x.quantity+'</div></div><div>'+money(x.products.price_fcfa*x.quantity)+'<br><button class="pbtn" data-remove="'+x.id+'">Retirer</button></div></div>').join("");
-      const history=(ord.data||[]).map(o=>'<div class="rowitem"><div><strong>'+safe(o.order_number)+'</strong><div class="muted">'+new Date(o.created_at).toLocaleDateString("fr-FR")+' · '+safe(o.status)+' · '+safe(o.payment_status)+'</div><strong>'+money(o.total_fcfa)+'</strong></div>'+(o.status==="pending_payment"&&o.payment_status==="unpaid"?'<button class="pbtn" data-cancel-order="'+o.id+'">Annuler</button>':"")+'</div>').join("");
+      const history=(ord.data||[]).map(o=>'<div class="rowitem"><div><strong>'+safe(o.order_number)+'</strong><div class="muted">'+new Date(o.created_at).toLocaleDateString("fr-FR")+' · '+safe(o.status)+' · '+safe(o.payment_status)+'</div><strong>'+money(o.total_fcfa)+'</strong></div>'+(o.status==="pending_payment"&&o.payment_status==="unpaid"?'<button class="pbtn" data-cancel-order="'+o.id+'">Annuler</button>':'')+'</div>').join("");
       wrap("Mon panier",(items.length?'<div class="panel">'+lines+'<h2>Total provisoire : '+money(total)+'</h2><p class="muted">Paiement en ligne désactivé. La commande sera enregistrée comme non payée.</p><form id="checkout-form"><label>Nom complet</label><input name="buyer_name" required minlength="2"><label>Téléphone</label><input name="buyer_phone" required minlength="6"><label>Ville de livraison</label><input name="delivery_city" required minlength="2"><label>Adresse de livraison</label><textarea name="delivery_address" required minlength="3"></textarea><button class="btn" type="submit">Confirmer la commande (sans paiement)</button></form></div>':'<div class="panel">Ton panier est vide pour le moment.</div>')+'<div class="panel"><h2>Mes commandes récentes</h2>'+(history||'<p class="muted">Aucune commande pour le moment.</p>')+'</div>');
       document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=async()=>{const r=await client.from("cart_items").delete().eq("id",b.dataset.remove);if(r.error)message(r.error.message,true);else cartPage();});
       const cf=document.querySelector("#checkout-form");
@@ -151,17 +151,21 @@
       try{await addCart(addA.dataset.article,q);}catch(err){message(err.message||"Ajout impossible.",true);addA.disabled=false;}
     }
   },true);
-  const ROUTES=["compte","vendeur","panier","article"];
   async function render(){
-    const parts=location.hash.replace(/^#\/?/,"").split("/").map(s=>{try{return decodeURIComponent(s);}catch(e){return s;}});
-    const path=parts[0];
+    const path = location.hash.replace(/^#\/?/, "").split("/")[0];
     if(path==="compte")await authPage();
     if(path==="panier")await cartPage();
     if(path==="vendeur")await vendorPage();
-    if(path==="article"&&parts[1])await articlePage(parts[1]);
   }
   window.addEventListener("hashchange",render);
   client.auth.onAuthStateChange(()=>{if(["compte","vendeur","panier"].includes(location.hash.replace(/^#\/?/,"").split("/")[0]))render();});
-  if(ROUTES.includes(location.hash.replace(/^#\/?/,"").split("/")[0]))render();
+  if(["compte","vendeur","panier"].includes(location.hash.replace(/^#\/?/,"").split("/")[0]))render();
   document.addEventListener("DOMContentLoaded",()=>{document.querySelectorAll('a[href="#/ouvrir"]').forEach(a=>{a.href="#/vendeur";a.textContent=a.textContent.replace("Ouvrir ma boutique","Espace vendeur");});});
+  /* Fiche d'un produit Supabase : liens de partage #/p/<id> et #/article/<id> */
+  function renderArticle(){
+    const parts=location.hash.replace(/^#\/?/,"").split("/").map(x=>{try{return decodeURIComponent(x);}catch(e){return x;}});
+    if(parts[1]&&(parts[0]==="article"||(parts[0]==="p"&&UUID.test(parts[1]))))articlePage(parts[1]);
+  }
+  window.addEventListener("hashchange",renderArticle);
+  renderArticle();
 })();
