@@ -9,7 +9,6 @@
   const productUrl = id => location.origin + location.pathname + "#/p/" + encodeURIComponent(id);
   const shareHtml = p => { const url=productUrl(p.id), text=encodeURIComponent(`${p.title} — ${money(p.price_fcfa)}\n${url}`); return `<div class="share"><a target="_blank" rel="noopener" href="https://wa.me/?text=${text}">Partager WhatsApp</a><a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}">Partager Facebook</a></div>`; };
   const safe = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const css = `<style>
   .commerce{max-width:900px;margin:26px auto;padding:0 18px 40px;color:var(--text)}
   .commerce h1{font-size:2rem;margin:8px 0}.commerce h2{font-size:1.35rem;margin:18px 0 10px}
@@ -25,6 +24,7 @@
   const btn = (label, act, cls="") => `<button class="btn ${cls}" type="button" data-commerce="${act}">${label}</button>`;
   let currentUser = null;
   let activeShop = null;
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const say = (msg, bad=false) => { const el=document.querySelector("#commerce-msg"); if(el){el.textContent=msg;el.style.color=bad?"#b4472d":"inherit";} else alert(msg); };
   const wrap = (title, body) => { app.innerHTML=css+`<div class="commerce"><p class="fil"><a href="#/">Accueil</a> › African Shop</p><h1 class="serif">${title}</h1><div id="commerce-msg" class="msg" hidden></div>${body}</div>` };
   const message = (s,err=false) => {const e=document.querySelector("#commerce-msg");if(e){e.hidden=false;e.textContent=s;e.style.color=err?"#ff6b57":"inherit";}};
