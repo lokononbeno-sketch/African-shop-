@@ -24,9 +24,10 @@
   const btn = (label, act, cls="") => `<button class="btn ${cls}" type="button" data-commerce="${act}">${label}</button>`;
   let currentUser = null;
   let activeShop = null;
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const say = (msg, bad=false) => { const el=document.querySelector("#commerce-msg"); if(el){el.textContent=msg;el.style.color=bad?"#b4472d":"inherit";} else alert(msg); };
   const wrap = (title, body) => { app.innerHTML=css+`<div class="commerce"><p class="fil"><a href="#/">Accueil</a> › African Shop</p><h1 class="serif">${title}</h1><div id="commerce-msg" class="msg" hidden></div>${body}</div>` };
-  const message = (s,err=false) => {const e=document.querySelector("#commerce-msg");if(e){e.hidden=false;e.textContent=s;e.style.color=err?"#b4472d":"inherit";}};
+  const message = (s,err=false) => {const e=document.querySelector("#commerce-msg");if(e){e.hidden=false;e.textContent=s;e.style.color=err?"#ff6b57":"inherit";}};
   async function authPage(){
     const {data:{user}}=await client.auth.getUser(); currentUser=user;
     if(user){location.hash="#/vendeur";return;}
@@ -43,7 +44,7 @@
     document.querySelector("#email-form").onsubmit=async e=>{e.preventDefault();await sendCode(String(new FormData(e.target).get("email")).trim().toLowerCase());};
     document.querySelector("#resend-code").onclick=async()=>{const email=sessionStorage.getItem("as_email");if(email)await sendCode(email);else message("Saisis d'abord ton adresse e-mail.",true);};
     document.querySelector("#otp-form").onsubmit=async e=>{e.preventDefault();const email=sessionStorage.getItem("as_email");const token=String(new FormData(e.target).get("token")).trim();if(!email){message("Demande d'abord un code avec ton adresse e-mail.",true);return;}const b=e.target.querySelector('button[type="submit"]');b.disabled=true;try{const {error}=await client.auth.verifyOtp({email,token,type:"email"});if(error)throw error;sessionStorage.removeItem("as_email");location.hash="#/vendeur";}catch(err){message(err.message||"Code invalide ou expiré.",true);}finally{b.disabled=false;}};
-    document.querySelector("#phone-form").onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.target));const b=e.target.querySelector('button[type="submit"]');const phone=String(v.phone||"").trim().replace(/[\\s().-]/g,"");b.disabled=true;b.textContent="Connexion…";try{if(!/^\\+[1-9]\\d{7,14}$/.test(phone))throw new Error("Saisis ton numéro au format international, par exemple +229XXXXXXXX.");const {error}=await client.auth.signInWithPassword({phone,password:v.password});if(error)throw error;location.hash="#/vendeur";}catch(err){message(err.message||"Connexion téléphone impossible.",true);}finally{b.disabled=false;b.textContent="Se connecter avec mon numéro";}};
+    document.querySelector("#phone-form").onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.target));const b=e.target.querySelector('button[type="submit"]');const phone=String(v.phone||"").trim().replace(/[\s().-]/g,"");b.disabled=true;b.textContent="Connexion…";try{if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new Error("Saisis ton numéro au format international, par exemple +229XXXXXXXX.");const {error}=await client.auth.signInWithPassword({phone,password:v.password});if(error)throw error;location.hash="#/vendeur";}catch(err){message(err.message||"Connexion téléphone impossible.",true);}finally{b.disabled=false;b.textContent="Se connecter avec mon numéro";}};
   }
   async function getCart(){
     const {data:{user}}=await client.auth.getUser();if(!user){location.hash="#/compte";return null;}
@@ -52,11 +53,41 @@
     if(!cart){const r=await client.from("shopping_carts").insert({user_id:user.id}).select("id").single();if(r.error)throw r.error;cart=r.data;}
     return cart.id;
   }
-  async function addCart(productId){
+  async function addCart(productId,qty=1){
+    qty=Math.max(1,Math.min(99,Math.floor(Number(qty))||1));
     const cartId=await getCart();if(!cartId)return;
     const {data:existing}=await client.from("cart_items").select("id,quantity").eq("cart_id",cartId).eq("product_id",productId).maybeSingle();
-    const r=existing?await client.from("cart_items").update({quantity:existing.quantity+1}).eq("id",existing.id):await client.from("cart_items").insert({cart_id:cartId,product_id:productId,quantity:1});
+    const r=existing?await client.from("cart_items").update({quantity:existing.quantity+qty}).eq("id",existing.id):await client.from("cart_items").insert({cart_id:cartId,product_id:productId,quantity:qty});
     if(r.error)throw r.error;message("Produit ajouté au panier.");location.hash="#/panier";
+  }
+  async function articlePage(id){
+    app.innerHTML=css+'<div class="commerce"><p class="muted">Chargement…</p></div>';
+    try{
+      if(!UUID.test(id)){wrap("Article introuvable",'<div class="panel"><p>Cet article n\'existe pas ou n\'est plus disponible.</p><a class="btn" href="#/">Retour à l\'accueil</a></div>');return;}
+      const {data:p,error}=await client.from("products").select("id,title,description,price_fcfa,image_path,stock_quantity,status,category,shops(name,city,district,whatsapp_number,status)").eq("id",id).maybeSingle();
+      if(error)throw error;
+      if(!p){wrap("Article introuvable",'<div class="panel"><p>Cet article n\'existe pas ou n\'est plus disponible.</p><a class="btn" href="#/">Retour à l\'accueil</a></div>');return;}
+      const shop=p.shops||{};
+      const dispo=p.status==="active"&&Number(p.stock_quantity)>0;
+      const img=p.image_path?imageUrl(p.image_path):"";
+      const lieu=[shop.district,shop.city].filter(Boolean).join(", ");
+      const num=String(shop.whatsapp_number||"").replace(/\D/g,"");
+      const waMsg=`Bonjour ${shop.name||""} 👋 Je suis intéressé(e) par « ${p.title} » (${money(p.price_fcfa)}) vu sur African Shop : ${productUrl(p.id)}`;
+      document.title=p.title+" | African Shop";
+      app.innerHTML=css+`<div class="wrap page"><a class="retour" href="#/produits"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg>Produits</a>
+        <div id="commerce-msg" class="msg" hidden></div>
+        <div class="fiche"><div><div class="vis" style="--h:${(parseInt(p.id.slice(0,4),16)||0)%360}"><svg class="ic" aria-hidden="true"><use href="#i-bag"/></svg>${img?`<img src="${safe(img)}" alt="${safe(p.title)}" onerror="this.remove()">`:""}${dispo?"":'<div class="rupture">Indisponible</div>'}</div></div>
+        <div style="display:grid;gap:14px">
+          <div><h1 style="margin-bottom:6px">${safe(p.title)}</h1><p class="prix">${money(p.price_fcfa)}</p><p class="etat${dispo?"":" non"}" style="margin-top:6px">${dispo?"En stock":"Indisponible"}</p></div>
+          ${p.description?`<p style="color:#d3d8dd">${safe(p.description)}</p>`:""}
+          ${shop.name?`<div class="lien-b"><span><strong>${safe(shop.name)}</strong><small>${safe(lieu)}</small></span></div>`:""}
+          ${dispo?`<div class="qte"><span>Quantité</span><div class="stepper"><button type="button" data-aqte="-1" aria-label="Moins">−</button><output id="aq" data-max="${Number(p.stock_quantity)}" data-price="${Number(p.price_fcfa)}">1</output><button type="button" data-aqte="1" aria-label="Plus">+</button></div><span class="total" id="aq-total">${money(p.price_fcfa)}</span></div>
+          <button class="btn bloc" id="add-article" type="button" data-article="${safe(p.id)}"><svg class="ic" aria-hidden="true"><use href="#i-cart"/></svg>Ajouter au panier</button>`:'<p class="note">Cet article est indisponible pour le moment.</p>'}
+          ${num?`<a class="btn noir bloc" target="_blank" rel="noopener" href="https://wa.me/${num}?text=${encodeURIComponent(waMsg)}"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Contacter le vendeur</a>`:""}
+          <div class="partage"><h3>Partager cet article</h3><div class="pbtns" style="margin-top:10px">${shareHtml(p).replace(/<div class="share">|<\/div>/g,"").replace(/<a /g,'<a class="pbtn" ')}</div></div>
+        </div></div></div>`;
+      document.querySelectorAll("[data-n]").forEach(el=>el.classList.toggle("actif",el.dataset.n==="produits"));
+    }catch(e){wrap("Article",'<div class="panel">'+safe(e.message)+'</div>');}
   }
   async function cartPage(){
     try {
@@ -86,7 +117,7 @@
     const shopInfo=activeShop?`<div class="panel"><h2>${safe(activeShop.name)}</h2><p class="muted">Statut : ${safe(activeShop.status)} · ${safe(activeShop.city)}</p><p>${safe(activeShop.description)}</p><h2>Ajouter un produit</h2><form id="product-form"><label>Photo du produit</label><input name="product_image" type="file" accept="image/jpeg,image/png,image/webp" required><label>Nom du produit</label><input name="title" required><label>Description</label><textarea name="description"></textarea><div class="grid"><div><label>Catégorie</label><input name="category" required></div><div><label>Prix (FCFA)</label><input name="price_fcfa" type="number" min="1" required></div><div><label>Stock</label><input name="stock_quantity" type="number" min="0" value="1"></div></div><button class="btn" type="submit">Publier le produit</button></form></div>`:"";
     const {data:products}=activeShop?await client.from("products").select("*").eq("shop_id",activeShop.id).order("created_at",{ascending:false}):{data:[]};
     wrap("Espace vendeur",`<div class="panel"><p>Connecté : <strong>${safe(user.email)}</strong></p>${btn("Me déconnecter","logout","sec")}</div>${activeShop?shopInfo:shopForm}<div class="panel"><h2>Mes produits</h2>${(products||[]).map(p=>`<div class="product-card">${p.image_path?`<img class="product-thumb" src="${safe(imageUrl(p.image_path))}" alt="">`:""}<div style="flex:1"><strong>${safe(p.title)}</strong><div><strong>${money(p.price_fcfa)}</strong></div><div class="muted">Stock ${p.stock_quantity} · ${safe(p.status)}</div>${shareHtml(p)}</div><div class="actions"><button class="pbtn" data-edit="${p.id}">Modifier</button><button class="pbtn" data-delete="${p.id}">Supprimer</button></div></div>`).join("")||'<p class="muted">Aucun produit publié.</p>'}</div><div class="panel"><h2>Mes commandes</h2><p class="muted">Les commandes et paiements seront activés après validation du parcours de paiement.</p></div>`);
-    const sf=document.querySelector("#shop-form");if(sf)sf.onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(sf));const slug=f.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")+"-"+Math.random().toString(36).slice(2,7);const {error}=await client.from("shops").insert({...f,slug,owner_id:user.id,status:"pending"});if(error)message(error.message,true);else{message("Boutique envoyée. Elle sera visible après validation.");vendorPage();}};
+    const sf=document.querySelector("#shop-form");if(sf)sf.onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(sf));const slug=f.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")+"-"+Math.random().toString(36).slice(2,7);const {error}=await client.from("shops").insert({...f,slug,owner_id:user.id,status:"pending"});if(error)message(error.message,true);else{message("Boutique envoyée. Elle sera visible après validation.");vendorPage();}};
     const pf=document.querySelector("#product-form");if(pf)pf.onsubmit=async e=>{e.preventDefault();const submit=pf.querySelector('button[type="submit"]');submit.disabled=true;let uploadedPath=null;try{const fd=new FormData(pf);const file=fd.get("product_image");if(!file||!file.size)throw new Error("Ajoute une photo du produit.");if(file.size>5*1024*1024)throw new Error("La photo ne doit pas dépasser 5 Mo.");if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Format accepté : JPG, PNG ou WebP.");const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";uploadedPath=activeShop.id+"/"+crypto.randomUUID()+"."+ext;const up=await client.storage.from("african-shop-products").upload(uploadedPath,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;const f={title:String(fd.get("title")).trim(),description:String(fd.get("description")||"").trim(),category:String(fd.get("category")).trim(),price_fcfa:Number(fd.get("price_fcfa")),stock_quantity:Number(fd.get("stock_quantity")),shop_id:activeShop.id,status:"active",image_path:uploadedPath};const {error}=await client.from("products").insert(f);if(error)throw error;message("Produit publié avec sa photo.");vendorPage();}catch(err){if(uploadedPath)await client.storage.from("african-shop-products").remove([uploadedPath]);message(err.message||"Impossible d'enregistrer le produit.",true);submit.disabled=false;}};
     document.querySelectorAll("[data-delete]").forEach(b=>b.onclick=async()=>{if(!confirm("Supprimer ce produit ?"))return;const {error}=await client.from("products").delete().eq("id",b.dataset.delete);if(error)message(error.message,true);else vendorPage();});
     document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=async()=>{const p=products.find(x=>x.id===b.dataset.edit);const title=prompt("Nom du produit",p.title);if(title===null)return;const price=prompt("Prix en FCFA",p.price_fcfa);if(price===null)return;const {error}=await client.from("products").update({title,price_fcfa:Number(price)}).eq("id",p.id);if(error)message(error.message,true);else vendorPage();});
@@ -94,8 +125,31 @@
   document.addEventListener("click",async e=>{
     const action=e.target.closest("[data-commerce]")?.dataset.commerce;
     if(action==="logout"){await client.auth.signOut();location.hash="#/compte";}
+    /* Produits de démonstration (boutiques.js) : pas dans Supabase, on ouvre WhatsApp. */
     const add=e.target.closest("#cmd[data-p]");
-    if(add){e.preventDefault();e.stopImmediatePropagation();try{await addCart(add.dataset.p);}catch(err){alert(err.message);}}
+    if(add){
+      e.preventDefault();e.stopImmediatePropagation();
+      if(!UUID.test(add.dataset.p)){const w=document.querySelector("#wa-cmd");if(w)window.open(w.href,"_blank","noopener");return;}
+      const q=parseInt(document.querySelector("#qte")?.textContent,10)||1;
+      try{await addCart(add.dataset.p,q);}catch(err){alert(err.message);}
+      return;
+    }
+    /* Page article Supabase : quantité et ajout au panier. */
+    const aq=e.target.closest("[data-aqte]");
+    if(aq){
+      const o=document.querySelector("#aq");if(!o)return;
+      const max=Math.max(1,Number(o.dataset.max)||99);
+      const q=Math.max(1,Math.min(max,99,(parseInt(o.textContent,10)||1)+Number(aq.dataset.aqte)));
+      o.textContent=q;
+      const t=document.querySelector("#aq-total");if(t)t.textContent=money(q*Number(o.dataset.price));
+      return;
+    }
+    const addA=e.target.closest("#add-article");
+    if(addA){
+      const q=parseInt(document.querySelector("#aq")?.textContent,10)||1;
+      addA.disabled=true;
+      try{await addCart(addA.dataset.article,q);}catch(err){message(err.message||"Ajout impossible.",true);addA.disabled=false;}
+    }
   },true);
   async function render(){
     const path = location.hash.replace(/^#\/?/, "").split("/")[0];
@@ -107,4 +161,11 @@
   client.auth.onAuthStateChange(()=>{if(["compte","vendeur","panier"].includes(location.hash.replace(/^#\/?/,"").split("/")[0]))render();});
   if(["compte","vendeur","panier"].includes(location.hash.replace(/^#\/?/,"").split("/")[0]))render();
   document.addEventListener("DOMContentLoaded",()=>{document.querySelectorAll('a[href="#/ouvrir"]').forEach(a=>{a.href="#/vendeur";a.textContent=a.textContent.replace("Ouvrir ma boutique","Espace vendeur");});});
+  /* Fiche d'un produit Supabase : liens de partage #/p/<id> et #/article/<id> */
+  function renderArticle(){
+    const parts=location.hash.replace(/^#\/?/,"").split("/").map(x=>{try{return decodeURIComponent(x);}catch(e){return x;}});
+    if(parts[1]&&(parts[0]==="article"||(parts[0]==="p"&&UUID.test(parts[1]))))articlePage(parts[1]);
+  }
+  window.addEventListener("hashchange",renderArticle);
+  renderArticle();
 })();
