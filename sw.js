@@ -1,4 +1,4 @@
-const CACHE_NAME="african-shop-v2";
+const CACHE_NAME="african-shop-v3";
 const CORE=["./","./index.html","./styles.css","./boutiques.js","./app.js","./commerce.js","./install.js","./manifest.webmanifest","./icon.svg"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
