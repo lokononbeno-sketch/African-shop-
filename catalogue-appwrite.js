@@ -9,6 +9,8 @@
   const {Query}=Appwrite;
   const mediaUrl=id=>{try{return id?storage.getFileView({bucketId:C.bucketId,fileId:id}).href:"";}catch(e){return "";}};
   async function load(){
+    BOUTIQUES.splice(0,BOUTIQUES.length);
+    PRODUITS.splice(0,PRODUITS.length);
     try{
       const [shopsResult,productsResult]=await Promise.all([
         tables.listRows({databaseId:C.databaseId,tableId:"shops",queries:[Query.equal("status","active"),Query.limit(100)]}),
