@@ -78,7 +78,11 @@ try{if(!sessionStorage.getItem("as_splash")&&!matchMedia("(prefers-reduced-motio
   <a href="#/compte" data-n="compte"><svg class="ic"><use href="#i-user"/></svg>Compte</a>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/appwrite@29.0.0"></script>
+<script>
+/* Configuration Appwrite — African Shop uniquement */
+window.AS_APPWRITE = { endpoint: "https://fra.cloud.appwrite.io/v1", projectId: "6af6ffad001c6379a9da", databaseId: "african_shop_db", bucketId: "african_shop_media" };
+</script>
 <script src="boutiques.js"></script>
 <script src="app.js"></script>
 <script src="animations.js"></script>
