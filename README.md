@@ -1,54 +1,49 @@
 # African Shop
 
-Plateforme web de découverte de boutiques et de produits, avec commandes WhatsApp et fonctionnalités de commerce intégrées à Supabase.
+Plateforme de découverte de boutiques et produits, avec contact et commandes WhatsApp.
 
-## Fonctionnalités présentes dans le code
+## Backend actuel : Appwrite
 
-- Catalogue de démonstration, catégories et recherche
-- Fiches produits et partage de liens
-- Contact et commande via WhatsApp
-- Authentification Supabase
-- Espace vendeur, publication de produits avec images
-- Panier et création de commandes sans paiement en ligne
+Le projet African Shop utilise son propre projet Appwrite. Les autres applications du propriétaire ne sont pas concernées.
 
-Ces parcours doivent être testés avant une utilisation en production.
+- Projet Appwrite : `6af6ffad001c6379a9da`
+- Région : Frankfurt (`fra`)
+- Base TablesDB : `african_shop_db`
+- Bucket médias : `african_shop_media`
+- Tables créées : `profiles`, `shops`, `products`, `shopping_carts`, `cart_items`, `orders`, `order_items`
+- Plateforme Web autorisée : `lokononbeno-sketch.github.io`
+
+## Authentification
+
+- E-mail : demande de code et vérification du code.
+- Téléphone : connexion par numéro et mot de passe, sans SMS, pour un compte téléphone déjà provisionné.
+- La création autonome d'un compte téléphone sans SMS nécessite un endpoint serveur sécurisé. Ne jamais placer de clé API secrète Appwrite dans le JavaScript du navigateur.
+
+## Fichiers principaux
+
+- `index.html` : configuration du SDK Appwrite et chargement de l'application.
+- `commerce.js` : authentification, espace vendeur, création de boutiques et dépôt de médias.
+- `admin.js` : point d'entrée administratif; les actions sont gérées par `commerce.js`.
+- `app.js` : catalogue de démonstration et navigation existants.
+- `boutiques.js` : données de démonstration.
+
+## Important — état de migration
+
+La connexion Supabase a été retirée des fichiers principaux `index.html`, `commerce.js` et `admin.js`. La base Appwrite et le stockage sont créés.
+
+La migration fonctionnelle n'est pas encore terminée : les pages publiques de catalogue, le panier et le flux complet de commandes doivent encore être reliés à TablesDB; les permissions et le rôle administrateur doivent être finalisés et testés avant ouverture publique. Les produits et commandes repartent de zéro; aucune donnée de l'ancien Supabase n'a été copiée.
 
 ## Démarrage local
-
-Prérequis : Node.js et npm pour utiliser la commande ci-dessous.
 
 ```bash
 git clone https://github.com/lokononbeno-sketch/African-shop-.git
 cd African-shop-
 npx serve .
-```
+``
 
-Ouvrir l’adresse locale affichée dans le terminal. Utiliser un serveur local plutôt que le protocole file://.
+## Sécurité avant production
 
-## Fichiers principaux
-
-- `index.html` : page principale
-- `app.js` : catalogue, recherche, navigation et commandes WhatsApp
-- `commerce.js` : authentification, panier et espace vendeur Supabase
-- `boutiques.js` : configuration et données du catalogue
-- `manifest.webmanifest` : manifeste de l’application web
-- `sw.js` : service worker
-- `install.js` : script lié à l’installation
-
-## Configuration Supabase
-
-`commerce.js` utilise une URL Supabase et une clé publishable. Les tables référencées incluent `shops`, `products`, `shopping_carts`, `cart_items` et `orders`. Le code appelle aussi les fonctions `checkout_cart` et `cancel_unpaid_order`, et utilise le bucket `african-shop-products`.
-
-La présence du code client ne garantit pas que ces ressources et leurs permissions soient correctement configurées. Vérifier les politiques RLS, les permissions du stockage et les contrôles des fonctions avant tout déploiement. Ne jamais exposer de clé secrète ou service_role dans le navigateur.
-
-## Vérifications avant production
-
-- Tester les liens de partage et l’ouverture directe des pages produit
-- Tester l’authentification et les erreurs réseau
-- Vérifier qu’un utilisateur ne peut pas consulter ou modifier les commandes et boutiques des autres
-- Vérifier côté base de données les prix, stocks et quantités
-- Tester les mises à jour du service worker
-
-## Licence
-
-Aucune licence n’est ajoutée par cette modification. Les conditions de réutilisation restent à préciser par le propriétaire.
+- Vérifier les permissions de chaque table et de chaque ligne.
+- Ne jamais faire confiance à un rôle administrateur stocké sans contrôle serveur.
+- Ne jamais exposer une clé API secrète ou service_role dans le navigateur.
+- Tester l'authentification, les médias, les droits vendeurs et les commandes avant de publier.
