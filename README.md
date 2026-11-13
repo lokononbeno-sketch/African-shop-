@@ -22,7 +22,8 @@ Le projet African Shop utilise son propre projet Appwrite. Les autres applicatio
 ## Fichiers principaux
 
 - `index.html` : configuration du SDK Appwrite et chargement de l'application.
-- `commerce.js` : authentification, espace vendeur, création de boutiques et dépôt de médias.
+- `catalogue-appwrite.js` : charge uniquement les boutiques et produits validés depuis Appwrite, sans données de démonstration.
+- `commerce.js` : code e-mail OTP, espace vendeur, création de boutiques et dépôt de médias.
 - `admin.js` : point d'entrée administratif; les actions sont gérées par `commerce.js`.
 - `app.js` : catalogue de démonstration et navigation existants.
 - `boutiques.js` : données de démonstration.
@@ -31,7 +32,7 @@ Le projet African Shop utilise son propre projet Appwrite. Les autres applicatio
 
 La connexion Supabase a été retirée des fichiers principaux `index.html`, `commerce.js` et `admin.js`. La base Appwrite et le stockage sont créés.
 
-La migration fonctionnelle n'est pas encore terminée : les pages publiques de catalogue, le panier et le flux complet de commandes doivent encore être reliés à TablesDB; les permissions et le rôle administrateur doivent être finalisés et testés avant ouverture publique. Les produits et commandes repartent de zéro; aucune donnée de l'ancien Supabase n'a été copiée.
+La lecture du catalogue public est maintenant reliée à TablesDB via `catalogue-appwrite.js`. Les données d'exemple locales sont masquées dès le chargement : seules les boutiques et produits `active` ayant des permissions de lecture publique peuvent apparaître. Le panier et le flux complet de commandes restent à relier. Les permissions de publication et le rôle administrateur doivent être finalisés et testés avant ouverture publique. Les produits et commandes repartent de zéro; aucune donnée de l'ancien Supabase n'a été copiée.
 
 ## Démarrage local
 
