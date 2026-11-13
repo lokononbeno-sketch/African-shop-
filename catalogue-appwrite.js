@@ -20,7 +20,7 @@
         id:s.$id,nom:s.name,ville:s.city||"",quartier:s.district||"",
         categories:s.category?[s.category]:[],description:s.description||"",
         horaires:"",livraison:"À convenir avec le commerçant.",
-        whatsapp:s.whatsapp_number||"",logo:"",exemple:false
+        whatsapp:s.whatsapp_number||"",logo:mediaUrl(s.logo_file_id),cover:mediaUrl(s.cover_file_id),exemple:false
       }));
       const shopIds=new Set(shops.map(s=>s.id));
       const products=(productsResult.rows||[]).filter(p=>shopIds.has(p.shop_id)).map(p=>({
