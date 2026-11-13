@@ -48,7 +48,33 @@
     document.querySelectorAll("[data-approve-shop]").forEach(b=>b.onclick=async()=>{await db.updateRow({databaseId:C.databaseId,tableId:"shops",rowId:b.dataset.approveShop,data:{status:"active"}});adminPage();});
     document.querySelectorAll("[data-approve-product]").forEach(b=>b.onclick=async()=>{await db.updateRow({databaseId:C.databaseId,tableId:"products",rowId:b.dataset.approveProduct,data:{status:"active"},permissions:[Permission.read(Role.any())]});adminPage();});
   }
-  async function cartPage(){shell("Mon panier",'<div class="as-card"><p>Le panier est initialisé. Les commandes seront activées après validation du parcours vendeur et des droits d’accès.</p></div>');}
+  const cartKey="african_shop_cart_v1";
+  const getCart=()=>{try{return JSON.parse(localStorage.getItem(cartKey)||"[]");}catch(e){return [];}};
+  const saveCart=items=>localStorage.setItem(cartKey,JSON.stringify(items));
+  async function cartPage(){
+    const items=getCart();
+    if(!items.length){shell("Mon panier","<div class='as-card'><p>Ton panier est vide.</p><a class='btn' href='#/produits'>Découvrir les produits</a></div>");return;}
+    const products=[];
+    for(const x of items){try{const p=await db.getRow({databaseId:C.databaseId,tableId:"products",rowId:x.product_id});if(p.status==="active"&&Number(p.stock_quantity)>0)products.push(p);}catch(e){}}
+    const valid=items.filter(x=>products.some(p=>p.$id===x.product_id));saveCart(valid);
+    const total=valid.reduce((n,x)=>n+Number(products.find(p=>p.$id===x.product_id).price_fcfa)*x.quantity,0);
+    let rows="";
+    for(const x of valid){const p=products.find(y=>y.$id===x.product_id);rows+="<div class='as-row'><div><b>"+esc(p.title)+"</b><div class='as-muted'>"+money(p.price_fcfa)+" × "+x.quantity+"</div></div><button class='btn' data-remove='"+p.$id+"'>Retirer</button></div>";}
+    shell("Mon panier","<div class='as-card'><h2>Articles</h2>"+rows+"<h2>Total : "+money(total)+"</h2></div><div class='as-card'><h2>Informations de livraison</h2><form id='as-checkout'><label>Nom complet</label><input name='buyer_name' required><label>Téléphone</label><input name='buyer_phone' type='tel' placeholder='+229...' required><label>Ville</label><input name='delivery_city' required><label>Adresse / quartier</label><textarea name='delivery_address' required></textarea><button class='btn' type='submit'>Confirmer la commande</button></form><p class='as-muted'>Le paiement et la livraison seront confirmés directement avec le vendeur. Aucun paiement en ligne n'est prélevé ici.</p></div>");
+    document.querySelectorAll("[data-remove]").forEach(btn=>btn.onclick=()=>{saveCart(getCart().filter(x=>x.product_id!==btn.dataset.remove));cartPage();});
+    document.querySelector("#as-checkout").onsubmit=async e=>{
+      e.preventDefault();const user=await current();if(!user){sessionStorage.setItem("as_after_login","#/panier");location.hash="#/compte";msg("Connecte-toi pour confirmer ta commande.");return;}
+      const btn=e.target.querySelector("button");btn.disabled=true;
+      try{
+        const v=Object.fromEntries(new FormData(e.target));const fresh=[];
+        for(const x of getCart()){const p=await db.getRow({databaseId:C.databaseId,tableId:"products",rowId:x.product_id});if(p.status!=="active"||Number(p.stock_quantity)<x.quantity)throw Error("Produit indisponible ou stock insuffisant : "+p.title);fresh.push({p,q:x.quantity});}
+        const amount=fresh.reduce((n,x)=>n+Number(x.p.price_fcfa)*x.q,0);const orderId=ID.unique();const number="AS-"+Date.now().toString(36).toUpperCase();
+        await db.createRow({databaseId:C.databaseId,tableId:"orders",rowId:orderId,data:{buyer_id:user.$id,order_number:number,status:"pending_confirmation",payment_status:"unpaid",total_fcfa:amount,buyer_name:v.buyer_name,buyer_phone:v.buyer_phone,delivery_city:v.delivery_city,delivery_address:v.delivery_address,created_at:now()},permissions:[Permission.read(Role.user(user.$id)),Permission.update(Role.user(user.$id))]});
+        for(const x of fresh){await db.createRow({databaseId:C.databaseId,tableId:"order_items",rowId:ID.unique(),data:{order_id:orderId,product_id:x.p.$id,shop_id:x.p.shop_id,title_snapshot:x.p.title,price_fcfa:Number(x.p.price_fcfa),quantity:x.q,line_total_fcfa:Number(x.p.price_fcfa)*x.q},permissions:[Permission.read(Role.user(user.$id))]});}
+        saveCart([]);shell("Commande enregistrée","<div class='as-card'><h2>Commande "+esc(number)+"</h2><p>Montant : <b>"+money(amount)+"</b></p><p>Ta commande est enregistrée. Les vendeurs doivent confirmer la disponibilité, le paiement et la livraison.</p><a class='btn' href='#/'>Retour à l'accueil</a></div>");
+      }catch(err){msg(err.message||"Impossible d'enregistrer la commande.",true);btn.disabled=false;}
+    };
+  }
   async function render(){const route=location.hash.replace(/^#\/?/,"").split("/")[0];if(route==="compte")await authPage();else if(route==="vendeur")await vendorPage();else if(route==="admin")await adminPage();else if(route==="panier")await cartPage();}
   document.addEventListener("DOMContentLoaded",render);window.addEventListener("hashchange",render);
   if(["compte","vendeur","admin","panier"].includes(location.hash.replace(/^#\/?/,"").split("/")[0]))render();
