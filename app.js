@@ -99,6 +99,7 @@
     const msg = `Bonjour ${b.nom} 👋 Je vous écris depuis African Shop (${base()}#/b/${b.id}).`;
     return { t: b.nom, n: "boutiques", h: `<div class="wrap page">${retour("#/boutiques", "Boutiques")}
       <div class="boutique-tete">${avatar(b, true)}<div><h1>${esc(b.nom)}</h1><p class="lead" style="margin:2px 0 0">${esc(lieu(b))}</p></div></div>
+      ${b.cover ? `<div style="width:100%;height:210px;overflow:hidden;border-radius:16px;margin:14px 0 18px;background:#eee"><img src="${esc(b.cover)}" alt="Couverture de ${esc(b.nom)}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>` : ""}
       ${b.exemple ? note : ""}
       <p style="margin-bottom:14px;color:#d3d8dd">${esc(b.description)}</p>
       <div class="infos" style="margin-bottom:16px">${b.horaires ? `<div>${ico("clock")}<span>${esc(b.horaires)}</span></div>` : ""}${b.livraison ? `<div>${ico("truck")}<span>${esc(b.livraison)}</span></div>` : ""}</div>
