@@ -119,7 +119,7 @@
         <p style="color:#d3d8dd">${esc(p.description)}</p>
         ${b.id ? `<a class="lien-b" href="#/b/${esc(b.id)}">${avatar(b)}<span><strong>${esc(b.nom)}</strong><small>${esc(lieu(b))}</small></span>${ico("next")}</a>` : ""}
         ${dispo ? `<div class="qte"><span>Quantité</span><div class="stepper"><button type="button" data-act="qte" data-d="-1" aria-label="Moins">−</button><output id="qte">1</output><button type="button" data-act="qte" data-d="1" aria-label="Plus">+</button></div><span class="total" id="total">${fmt(p.prix)}</span></div>
-        <a class="btn bloc" id="cmd" data-p="${esc(p.id)}" href="#/panier">${ico("cart")}Ajouter au panier</a>
+        <a class="btn bloc" id="cmd" data-act="add-cart" data-p="${esc(p.id)}" href="#/panier">${ico("cart")}Ajouter au panier</a>
         <a class="btn noir bloc" id="wa-cmd" href="${lienCommande(p, 1)}" target="_blank" rel="noopener">${ico("chat")}Commander sur WhatsApp</a>
         <p style="font-size:.84rem;color:var(--muted)">Le paiement et la livraison se décident avec le commerçant.</p>` : '<p class="note">Ce produit est indisponible pour le moment.</p>'}
         ${partage(base() + "#/p/" + p.id, "Regarde « " + p.nom + " » sur African Shop : " + fmt(p.prix) + ".", "Partager ce produit")}
@@ -184,7 +184,13 @@
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const act = b.dataset.act;
-    if (act === "qte") {
+    if (act === "add-cart") {
+      e.preventDefault();
+      const id=b.dataset.p; const q=Math.max(1,parseInt(document.querySelector("#qte")?.textContent||"1",10));
+      let cart=[]; try{cart=JSON.parse(localStorage.getItem("african_shop_cart_v1")||"[]");}catch(_){}
+      const item=cart.find(x=>x.product_id===id); if(item)item.quantity=Math.min(99,item.quantity+q); else cart.push({product_id:id,quantity:q});
+      localStorage.setItem("african_shop_cart_v1",JSON.stringify(cart)); b.textContent="Ajouté au panier ✓";
+    } else if (act === "qte") {
       const o = $("#qte"), cmd = $("#cmd"); if (!o || !cmd) return;
       const q = Math.max(1, Math.min(99, (parseInt(o.textContent, 10) || 1) + parseInt(b.dataset.d, 10)));
       const p = PRODUITS.find(x => x.id === cmd.dataset.p);
