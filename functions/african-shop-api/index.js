@@ -68,6 +68,10 @@ async function updateRow(ctx, table, rowId, data, permissions) {
   return appwriteRequest(ctx, `${tablePath(table)}/${encodeURIComponent(rowId)}`, 'PATCH', { data, permissions });
 }
 
+async function deleteRow(ctx, table, rowId) {
+  return appwriteRequest(ctx, `${tablePath(table)}/${encodeURIComponent(rowId)}`, 'DELETE');
+}
+
 async function currentUser(ctx, headers) {
   const jwt = headers['x-appwrite-user-jwt'];
   if (!jwt) throw new HttpError('Connexion requise.', 401);
@@ -246,6 +250,125 @@ async function handle({ req, res, log, error }) {
         created_at: new Date().toISOString()
       }, [permission('read', user.$id), permission('delete', user.$id)]);
       return res.json({ product }, 201);
+    }
+
+    if (path === '/orders/create' && method === 'POST') {
+      const buyerName = clean(body.buyer_name, 160);
+      const buyerPhone = clean(body.buyer_phone, 24);
+      const deliveryCity = clean(body.delivery_city, 100);
+      const deliveryAddress = clean(body.delivery_address, 2000);
+      if (!buyerName || !buyerPhone || buyerPhone.length < 8 || !deliveryCity || !deliveryAddress) {
+        throw new HttpError('Les informations de livraison sont incomplètes.', 400);
+      }
+      if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) {
+        throw new HttpError('Le panier doit contenir entre 1 et 30 lignes.', 400);
+      }
+      const quantities = new Map();
+      for (const entry of body.items) {
+        const productId = clean(entry?.product_id, 36);
+        const quantity = Number(entry?.quantity);
+        if (!productId || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 99) {
+          throw new HttpError('Une ligne du panier est invalide.', 400);
+        }
+        quantities.set(productId, (quantities.get(productId) || 0) + quantity);
+      }
+      if (quantities.size > 30 || [...quantities.values()].some(quantity => quantity > 99)) {
+        throw new HttpError('Quantité de panier invalide.', 400);
+      }
+
+      const validated = [];
+      let total = 0;
+      for (const [productId, quantity] of quantities) {
+        const product = await getRow(ctx, 'products', productId);
+        if (product.status !== 'active') throw new HttpError('Un produit du panier n’est plus disponible.', 409);
+        const shop = await getRow(ctx, 'shops', product.shop_id);
+        if (shop.status !== 'active') throw new HttpError('Une boutique du panier n’est plus active.', 409);
+        const price = Number(product.price_fcfa);
+        const stock = Number(product.stock_quantity || 0);
+        if (!Number.isSafeInteger(price) || price < 1 || !Number.isSafeInteger(stock) || stock < quantity) {
+          throw new HttpError('Stock insuffisant ou prix invalide pour « ' + clean(product.title, 180) + ' ».', 409);
+        }
+        const lineTotal = price * quantity;
+        if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(total + lineTotal)) {
+          throw new HttpError('Le montant de la commande est trop élevé.', 400);
+        }
+        total += lineTotal;
+        validated.push({ product, shop, quantity, price, lineTotal });
+      }
+
+      const orderId = id();
+      const orderNumber = 'AS-' + Date.now().toString(36).toUpperCase() + '-' + orderId.slice(0, 6).toUpperCase();
+      const createdItemIds = [];
+      let order = null;
+      try {
+        order = await createRow(ctx, 'orders', {
+          buyer_id: user.$id,
+          order_number: orderNumber,
+          status: 'pending_confirmation',
+          payment_status: 'unpaid',
+          total_fcfa: total,
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
+          delivery_city: deliveryCity,
+          delivery_address: deliveryAddress,
+          created_at: new Date().toISOString()
+        }, [permission('read', user.$id)], orderId);
+
+        for (const entry of validated) {
+          const itemPermissions = [...new Set([
+            permission('read', user.$id),
+            permission('read', entry.shop.owner_id)
+          ])];
+          const item = await createRow(ctx, 'order_items', {
+            order_id: orderId,
+            product_id: entry.product.$id,
+            shop_id: entry.shop.$id,
+            title_snapshot: clean(entry.product.title, 180),
+            price_fcfa: entry.price,
+            quantity: entry.quantity,
+            line_total_fcfa: entry.lineTotal,
+            status: 'pending_confirmation'
+          }, itemPermissions);
+          createdItemIds.push(item.$id);
+        }
+      } catch (writeError) {
+        for (const itemId of createdItemIds.reverse()) {
+          try { await deleteRow(ctx, 'order_items', itemId); }
+          catch (cleanupError) { log('Rollback ligne de commande ' + itemId + ' impossible: ' + cleanupError.message); }
+        }
+        if (order?.$id) {
+          try { await deleteRow(ctx, 'orders', order.$id); }
+          catch (cleanupError) { log('Rollback commande ' + order.$id + ' impossible: ' + cleanupError.message); }
+        }
+        throw writeError;
+      }
+
+      return res.json({
+        order: { $id: order.$id, order_number: orderNumber, total_fcfa: total, status: 'pending_confirmation' },
+        item_count: createdItemIds.length
+      }, 201);
+    }
+
+    if (path === '/seller/order-status' && method === 'POST') {
+      const itemId = clean(body.item_id, 36);
+      const nextStatus = clean(body.status, 30);
+      if (!itemId || !nextStatus) throw new HttpError('Ligne de commande ou statut manquant.', 400);
+      const item = await getRow(ctx, 'order_items', itemId);
+      const shop = await getRow(ctx, 'shops', item.shop_id);
+      if (shop.owner_id !== user.$id) throw new HttpError('Cette commande ne concerne pas ta boutique.', 403);
+      const transitions = {
+        pending_confirmation: ['confirmed', 'rejected'],
+        confirmed: ['preparing'],
+        preparing: ['ready_for_pickup', 'out_for_delivery'],
+        ready_for_pickup: ['delivered'],
+        out_for_delivery: ['delivered']
+      };
+      const currentStatus = item.status || 'pending_confirmation';
+      if (!(transitions[currentStatus] || []).includes(nextStatus)) {
+        throw new HttpError('Cette transition de commande n’est pas autorisée.', 409);
+      }
+      const updated = await updateRow(ctx, 'order_items', itemId, { status: nextStatus }, item.$permissions);
+      return res.json({ item: { $id: updated.$id, status: updated.status } });
     }
 
     if (path === '/moderation/queue' && method === 'GET') {
