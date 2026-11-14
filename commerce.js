@@ -6,6 +6,19 @@
   const client=new Appwrite.Client().setEndpoint(C.endpoint).setProject(C.projectId);
   const account=new Appwrite.Account(client), db=new Appwrite.TablesDB(client), storage=new Appwrite.Storage(client);
   const {ID,Query,Permission,Role}=Appwrite;
+  const functions=new Appwrite.Functions(client);
+  const apiCall=async(path,method="GET",data)=>{
+    const execution=await functions.createExecution({
+      functionId:"african-shop-api",path,method,
+      body:data===undefined?"":JSON.stringify(data),async:false
+    });
+    const status=Number(execution.responseStatusCode||500);
+    let payload={};
+    try{payload=execution.responseBody?JSON.parse(execution.responseBody):{};}catch(e){}
+    if(status<200||status>=300)throw new Error(payload.error||"Le service sécurisé African Shop est indisponible (HTTP "+status+").");
+    return payload;
+  };
+
   const app=document.querySelector("#app");
   const money=n=>Number(n||0).toLocaleString("fr-FR")+" FCFA";
   const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -16,7 +29,7 @@
   const read=(table,queries=[])=>db.listRows({databaseId:C.databaseId,tableId:table,queries:[...queries,Query.limit(100)]});
   const create=(table,data,publicRead=false)=>db.createRow({databaseId:C.databaseId,tableId:table,rowId:ID.unique(),data,permissions:[Permission.read(Role.user(data.owner_id||data.user_id||data.buyer_id||"")),Permission.update(Role.user(data.owner_id||data.user_id||data.buyer_id||"")),Permission.delete(Role.user(data.owner_id||data.user_id||data.buyer_id||"")),...(publicRead?[Permission.read(Role.any())]:[])]});
   const current=async()=>{try{return await account.get();}catch(e){return null;}};
-  async function profile(user){try{const field=user.phone?"phone":"email";const value=user.phone||user.email||"";const r=await read("profiles",[Query.equal(field,value)]);return r.rows[0]||null;}catch(e){return null;}}
+  async function profile(user){try{const result=await apiCall("/profile/ensure","POST",{});return result.profile||null;}catch(e){msg(e.message||"Profil indisponible.",true);return null;}}
   async function authPage(){
     const user=await current();if(user){location.hash="#/vendeur";return;}
     shell("Connexion et création de compte",'<div class="as-card"><h2>Connexion par e-mail</h2><p>Entre ton adresse. Tu recevras un code à 6 chiffres. Le compte est créé automatiquement si nécessaire.</p><form id="as-email"><label>Adresse e-mail</label><input name="email" type="email" required autocomplete="email"><button class="btn" type="submit">Recevoir mon code</button></form><form id="as-otp" hidden><label>Code reçu par e-mail</label><input name="code" inputmode="numeric" maxlength="6" required><button class="btn" type="submit">Vérifier et me connecter</button></form></div><div class="as-card"><h2>Connexion par téléphone</h2><p>La connexion par téléphone sans code nécessite un service serveur sécurisé qui vérifie le mot de passe et crée une session Appwrite. Cette étape est en cours de mise en place ; ne saisis pas encore tes identifiants ici.</p><form id="as-phone"><label>Numéro international</label><input name="phone" type="tel" placeholder="+229XXXXXXXX" required><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"><button class="btn" type="submit" disabled>Connexion téléphonique bientôt disponible</button></form><p class="as-muted">La connexion e-mail par code est disponible en premier. Ne partage jamais ton mot de passe.</p></div>');
@@ -27,7 +40,7 @@
   async function vendorPage(){
     const user=await current();if(!user){location.hash="#/compte";return;}
     let p=await profile(user);
-    if(!p){try{p=await db.createRow({databaseId:C.databaseId,tableId:"profiles",rowId:ID.unique(),data:{email:user.email||"",phone:user.phone||"",display_name:user.name||"",role:"customer",created_at:now()},permissions:[Permission.read(Role.user(user.$id))]});}catch(e){}}
+    if(!p){shell("Espace vendeur","<div class='as-card'>Le profil n’a pas pu être initialisé. Réessaie après reconnexion.</div>");return;}
     const shops=await read("shops",[Query.equal("owner_id",user.$id),Query.orderDesc("$createdAt")]).catch(()=>({rows:[]}));
     const selectedShopId=sessionStorage.getItem("as_selected_shop");
     const shop=shops.rows.find(x=>x.$id===selectedShopId)||shops.rows[0];
@@ -45,7 +58,7 @@
     document.querySelector("#as-logout").onclick=async()=>{await account.deleteSession({sessionId:"current"});location.hash="#/compte";};
     document.querySelectorAll("[data-copy-shop]").forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(btn.dataset.copyShop);msg("Lien de la boutique copié.");}catch(e){msg("Copie impossible sur ce navigateur.",true);}});
     document.querySelectorAll("[data-copy-product]").forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(btn.dataset.copyProduct);msg("Lien du produit copié.");}catch(e){msg("Copie impossible sur ce navigateur. Utilise le partage WhatsApp ou Facebook.",true);}});
-    const sf=document.querySelector("#as-shop");if(sf)sf.onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(sf));const slug=v.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-")+"-"+ID.unique().slice(0,5);try{const shopId=ID.unique();await db.createRow({databaseId:C.databaseId,tableId:"shops",rowId:shopId,data:{owner_id:user.$id,name:v.name,slug,category:v.category,city:v.city,district:v.district,whatsapp_number:v.whatsapp_number,description:v.description,status:"pending",created_at:now()},permissions:[Permission.read(Role.user(user.$id)),Permission.update(Role.user(user.$id)),Permission.delete(Role.user(user.$id))]});sessionStorage.setItem("as_selected_shop",shopId);msg("Boutique créée et envoyée pour validation. Tu peux en créer plusieurs avec ce compte.");vendorPage();}catch(err){msg(err.message,true);}};
+    const sf=document.querySelector("#as-shop");if(sf)sf.onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(sf));const b=sf.querySelector("button");b.disabled=true;try{const result=await apiCall("/shops/create","POST",v);sessionStorage.setItem("as_selected_shop",result.shop.$id);msg("Boutique créée et envoyée pour validation.");vendorPage();}catch(err){msg(err.message||"Création impossible.",true);b.disabled=false;}};
     const editForm=document.querySelector("#as-shop-edit");
     if(editForm)editForm.onsubmit=async e=>{
       e.preventDefault();
@@ -66,23 +79,56 @@
           if(!file||!file.size)continue;
           if(!file.type.startsWith("image/"))throw Error("Le logo et la couverture doivent être des images.");
           if(file.size>50*1024*1024)throw Error("Une image dépasse 50 Mo.");
-          const stored=await storage.createFile({bucketId:C.bucketId,fileId:ID.unique(),file,permissions:[Permission.read(Role.any()),Permission.delete(Role.user(user.$id))]});
+          const stored=await storage.createFile({bucketId:C.bucketId,fileId:ID.unique(),file,permissions:[Permission.read(Role.user(user.$id)),Permission.delete(Role.user(user.$id))]});
           data[key]=stored.$id;
         }
-        await db.updateRow({databaseId:C.databaseId,tableId:"shops",rowId:shop.$id,data});
+        await apiCall("/shops/update","POST",{shop_id:shop.$id,...data});
         window.dispatchEvent(new Event("africanshop:refresh-catalog"));
         vendorPage();
       }catch(err){msg(err.message||"Mise à jour impossible.",true);button.disabled=false;}
     };
-    const pf=document.querySelector("#as-product");if(pf)pf.onsubmit=async e=>{e.preventDefault();const b=pf.querySelector("button");b.disabled=true;let ids=[];try{const fd=new FormData(pf);for(const file of fd.getAll("media")){if(!file.size)continue;if(file.size>50*1024*1024)throw Error("Un fichier dépasse 50 Mo.");const f=await storage.createFile({bucketId:C.bucketId,fileId:ID.unique(),file,permissions:[Permission.read(Role.any()),Permission.delete(Role.user(user.$id))]});ids.push(f.$id);}const data={shop_id:shop.$id,title:fd.get("title").trim(),description:fd.get("description"),price_fcfa:Number(fd.get("price_fcfa")),stock_quantity:Number(fd.get("stock_quantity")),status:"pending",category:fd.get("category"),image_file_id:ids[0]||"",media_file_ids:ids,created_at:now()};await db.createRow({databaseId:C.databaseId,tableId:"products",rowId:ID.unique(),data,permissions:[Permission.read(Role.user(user.$id)),Permission.update(Role.user(user.$id)),Permission.delete(Role.user(user.$id))]});msg("Produit et médias enregistrés. Le produit attend la validation de l'administration.");vendorPage();}catch(err){msg(err.message||"Enregistrement impossible.",true);b.disabled=false;}};
+    const pf=document.querySelector("#as-product");if(pf)pf.onsubmit=async e=>{
+      e.preventDefault();const b=pf.querySelector("button");b.disabled=true;let ids=[];
+      try{
+        const fd=new FormData(pf);
+        for(const file of fd.getAll("media")){
+          if(!file.size)continue;
+          if(file.size>50*1024*1024)throw Error("Un fichier dépasse 50 Mo.");
+          const stored=await storage.createFile({bucketId:C.bucketId,fileId:ID.unique(),file,permissions:[Permission.read(Role.user(user.$id)),Permission.delete(Role.user(user.$id))]});
+          ids.push(stored.$id);
+        }
+        await apiCall("/products/create","POST",{
+          shop_id:shop.$id,title:fd.get("title").trim(),description:fd.get("description"),
+          price_fcfa:Number(fd.get("price_fcfa")),stock_quantity:Number(fd.get("stock_quantity")),
+          category:fd.get("category"),image_file_id:ids[0]||"",media_file_ids:ids
+        });
+        msg("Produit et médias enregistrés. Le produit attend la validation de l'administration.");
+        vendorPage();
+      }catch(err){msg(err.message||"Enregistrement impossible.",true);b.disabled=false;}
+    };
   }
   async function adminPage(){
-    const user=await current();if(!user){location.hash="#/compte";return;}const p=await profile(user);
+    const user=await current();if(!user){location.hash="#/compte";return;}
+    const p=await profile(user);
     if(!p||p.role!=="admin"){shell("Administration","<div class='as-card'>Accès réservé à un compte administrateur autorisé.</div>");return;}
-    const [s,pr,o]=await Promise.all([read("shops"),read("products"),read("orders")]);
-    shell("Administration",'<div class="as-card"><h2>Boutiques à valider</h2>'+(s.rows.map(x=>'<div class="as-row"><b>'+esc(x.name)+'</b><button class="btn" data-approve-shop="'+x.$id+'">Valider</button></div>').join("")||"Aucune boutique.")+'</div><div class="as-card"><h2>Produits à valider</h2>'+(pr.rows.map(x=>'<div class="as-row"><b>'+esc(x.title)+'</b><button class="btn" data-approve-product="'+x.$id+'">Valider</button></div>').join("")||"Aucun produit.")+'</div><div class="as-card"><h2>Commandes</h2>'+(o.rows.map(x=>'<p>'+esc(x.order_number)+' · '+money(x.total_fcfa)+' · '+esc(x.status)+'</p>').join("")||"Aucune commande.")+'</div>');
-    document.querySelectorAll("[data-approve-shop]").forEach(b=>b.onclick=async()=>{await db.updateRow({databaseId:C.databaseId,tableId:"shops",rowId:b.dataset.approveShop,data:{status:"active"}});adminPage();});
-    document.querySelectorAll("[data-approve-product]").forEach(b=>b.onclick=async()=>{await db.updateRow({databaseId:C.databaseId,tableId:"products",rowId:b.dataset.approveProduct,data:{status:"active"},permissions:[Permission.read(Role.any())]});adminPage();});
+    let queue;
+    try{queue=await apiCall("/moderation/queue","GET");}
+    catch(err){shell("Administration","<div class='as-card'>"+esc(err.message||"Service de modération indisponible.")+"</div>");return;}
+    const shops=queue.shops||[],products=queue.products||[];
+    const controls=(type,item)=>'<div class="as-actions"><button class="btn" data-moderate="'+type+'" data-id="'+esc(item.$id)+'" data-action="approve">Valider</button><button class="btn noir" data-moderate="'+type+'" data-id="'+esc(item.$id)+'" data-action="reject">Refuser</button></div>';
+    shell("Administration",'<div class="as-card"><h2>Boutiques à valider ('+shops.length+')</h2>'+
+      (shops.map(x=>'<div class="as-row"><div><b>'+esc(x.name)+'</b><div class="as-muted">'+esc(x.city||"")+' · '+esc(x.category||"")+'</div></div>'+controls("shop",x)+'</div>').join("")||"<p>Aucune boutique en attente.</p>")+
+      '</div><div class="as-card"><h2>Produits à valider ('+products.length+')</h2>'+
+      (products.map(x=>'<div class="as-row"><div><b>'+esc(x.title)+'</b><div class="as-muted">'+money(x.price_fcfa)+' · Boutique '+esc(x.shop_id)+'</div></div>'+controls("product",x)+'</div>').join("")||"<p>Aucun produit en attente.</p>")+
+      '</div><div class="as-card"><p class="as-muted">Les validations sont effectuées par le service Appwrite sécurisé. Les vendeurs ne peuvent pas modifier eux-mêmes le statut de publication.</p></div>');
+    document.querySelectorAll("[data-moderate]").forEach(button=>button.onclick=async()=>{
+      const action=button.dataset.action;button.disabled=true;
+      try{
+        await apiCall("/moderation/approve","POST",{type:button.dataset.moderate,id:button.dataset.id,action});
+        msg(action==="approve"?"Élément validé et rendu public.":"Élément refusé.");
+        adminPage();
+      }catch(err){msg(err.message||"Action de modération impossible.",true);button.disabled=false;}
+    });
   }
   const cartKey="african_shop_cart_v1";
   const getCart=()=>{try{return JSON.parse(localStorage.getItem(cartKey)||"[]");}catch(e){return [];}};
