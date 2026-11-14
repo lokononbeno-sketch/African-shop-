@@ -97,7 +97,7 @@ async function ensureProfile(ctx, user) {
       phone: user.phone || '',
       display_name: user.name || '',
       role: 'customer',
-      created_at: new Date().toISOstring()
+      created_at: new Date().toISOString()
     }, [permission('read', user.$id)]);
   }
   return profile;
@@ -119,12 +119,23 @@ function ownerPermissions(existing, ownerId, makePublic) {
   return [...new Set(perms)];
 }
 
-async function setFileVisibility(ctx, fileId, ownerId, makePublic) {
-  if (!fileId || typeof fileId !== 'string') return;
+async function getOwnedFile(ctx, fileId, ownerId) {
+  if (!fileId || typeof fileId !== 'string') return null;
   const path = `/storage/buckets/${BUCKET_ID}/files/${encodeURIComponent(fileId)}`;
   const file = await appwriteRequest(ctx, path);
-  const permissions = ownerPermissions(file.$permissions, ownerId, makePublic);
-  await appwriteRequest(ctx, path, 'PATCH', { permissions });
+  const permissions = Array.isArray(file.$permissions) ? file.$permissions : [];
+  if (!permissions.includes(permission('read', ownerId)) &&
+      !permissions.includes(permission('delete', ownerId))) {
+    throw new HttpError('Ce fichier média ne t’appartient pas.', 403);
+  }
+  return { path, file };
+}
+
+async function setFileVisibility(ctx, fileId, ownerId, makePublic) {
+  const owned = await getOwnedFile(ctx, fileId, ownerId);
+  if (!owned) return;
+  const permissions = ownerPermissions(owned.file.$permissions, ownerId, makePublic);
+  await appwriteRequest(ctx, owned.path, 'PATCH', { permissions });
 }
 
 function slugify(value, suffix) {
@@ -189,11 +200,21 @@ async function handle({ req, res, log, error }) {
       if (data.name !== undefined && !data.name) throw new HttpError('Le nom de la boutique est obligatoire.', 400);
       if (data.city !== undefined && !data.city) throw new HttpError('La ville est obligatoire.', 400);
       if (data.name !== undefined) data.slug = slugify(data.name, shop.$id);
+      for (const fileId of [data.logo_file_id, data.cover_file_id].filter(Boolean)) {
+        await getOwnedFile(ctx, fileId, user.$id);
+      }
       if (shop.status === 'active') {
         if (data.logo_file_id) await setFileVisibility(ctx, data.logo_file_id, user.$id, true);
         if (data.cover_file_id) await setFileVisibility(ctx, data.cover_file_id, user.$id, true);
       }
       const updated = await updateRow(ctx, 'shops', shopId, data, ownerPermissions(shop.$permissions, user.$id, shop.status === 'active'));
+      for (const key of ['logo_file_id', 'cover_file_id']) {
+        const oldFileId = shop[key];
+        if (Object.prototype.hasOwnProperty.call(data, key) && oldFileId && oldFileId !== data[key]) {
+          try { await setFileVisibility(ctx, oldFileId, user.$id, false); }
+          catch (cleanupError) { log(`Nettoyage média ${oldFileId} impossible: ${cleanupError.message}`); }
+        }
+      }
       return res.json({ shop: updated });
     }
 
@@ -208,6 +229,10 @@ async function handle({ req, res, log, error }) {
       const shop = await getRow(ctx, 'shops', shopId);
       if (shop.owner_id !== user.$id) throw new HttpError('Cette boutique ne t’appartient pas.', 403);
       const media = Array.isArray(body.media_file_ids) ? body.media_file_ids.filter(x => typeof x === 'string').slice(0, 12) : [];
+      const imageFileId = clean(body.image_file_id || media[0] || '', 36);
+      for (const fileId of [...new Set([...media, imageFileId].filter(Boolean))]) {
+        await getOwnedFile(ctx, fileId, user.$id);
+      }
       const product = await createRow(ctx, 'products', {
         shop_id: shopId,
         title,
@@ -216,7 +241,7 @@ async function handle({ req, res, log, error }) {
         stock_quantity: stock,
         status: 'pending',
         category: clean(body.category, 80),
-        image_file_id: clean(body.image_file_id || media[0] || '', 36),
+        image_file_id: imageFileId,
         media_file_ids: media,
         created_at: new Date().toISOString()
       }, [permission('read', user.$id), permission('delete', user.$id)]);
