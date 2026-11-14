@@ -14,9 +14,13 @@ const permission = (action, userId) => `${action}("user:${userId}")`;
 const publicRead = 'read("any")';
 
 function bodyOf(req) {
-  if (req.bodyJson && typeof req.bodyJson === 'object') return req.bodyJson;
-  if (!req.body) return {};
-  try { return JSON.parse(req.body); } catch { throw new HttpError('Corps JSON invalide.', 400); }
+  const raw = req.body;
+  if (typeof raw === 'string') {
+    if (!raw.trim()) return {};
+    try { return JSON.parse(raw); } catch { throw new HttpError('Corps JSON invalide.', 400); }
+  }
+  if (raw && typeof raw === 'object') return raw;
+  return {};
 }
 
 function queryString(queries, limit = 100) {
@@ -93,7 +97,7 @@ async function ensureProfile(ctx, user) {
       phone: user.phone || '',
       display_name: user.name || '',
       role: 'customer',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOstring()
     }, [permission('read', user.$id)]);
   }
   return profile;
