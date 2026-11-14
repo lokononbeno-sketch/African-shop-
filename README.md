@@ -53,6 +53,15 @@ La lecture du catalogue public est maintenant reliée à TablesDB via `catalogue
 - Les tables `shops`, `products` et `orders` ont `rowSecurity: true`. Les boutiques et produits sont filtrés par `status = active` pour le catalogue. La base ne contient actuellement aucune boutique ni aucun produit; les tests réels d'approbation, de publication média et d'achat restent donc impossibles.
 - Les transitions de commandes multi-boutiques, le stock et le paiement en ligne ne sont pas encore finalisés. Aucune transaction d'achat réelle n'est déclarée opérationnelle.
 
+## Commandes et transitions sécurisées — vérification du 14 novembre 2026
+
+- La création d'une commande passe par la fonction Appwrite `african-shop-api` via `POST /orders/create`. Le serveur relit chaque produit et sa boutique, vérifie leur statut actif et le stock courant, recalcule les prix et le total depuis TablesDB, puis écrit la commande et ses lignes.
+- La commande principale est lisible par l'acheteur uniquement. Chaque ligne est lisible par l'acheteur et le propriétaire de la boutique concernée; les données d'adresse et de téléphone de livraison ne sont pas exposées dans les lignes vendeur.
+- Les vendeurs font évoluer l'état de leurs propres lignes via `POST /seller/order-status`. Le serveur vérifie la propriété de la boutique et n'accepte que les transitions prévues : à confirmer → confirmée/refusée → préparation → prête au retrait ou en livraison → livrée.
+- En cas d'échec pendant l'écriture de la commande, le serveur tente de supprimer les lignes déjà créées puis la commande principale.
+- Limites restantes : le stock est vérifié mais pas réservé ni décrémenté de manière transactionnelle; des commandes simultanées peuvent donc encore dépasser le stock. Le statut global de la commande multi-boutiques n'est pas recalculé à partir des lignes. Aucun paiement en ligne n'est collecté.
+- Les tests authentifiés de création et de changement d'état nécessitent une session utilisateur réelle. Les exécutions disponibles confirment uniquement qu'un appel sans session à la file de modération est rejeté en HTTP 401.
+
 ## Démarrage local
 
 ```bash
