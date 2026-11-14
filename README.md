@@ -45,7 +45,7 @@ La lecture du catalogue public est maintenant reliée à TablesDB via `catalogue
 
 ## État de la sécurisation de la modération — vérification du 14 novembre 2026
 
-- La fonction Appwrite `african-shop-api` est activée; son déploiement actif `6af8684f2a949bbdf061` est indiqué `ready`.
+- La fonction Appwrite `african-shop-api` est activée; son déploiement actif `6af86e55eb39048454b4` est indiqué `ready`.
 - Le routage de la fonction vers `/moderation/queue` est reconnu. Une exécution de contrôle sans session utilisateur répond HTTP 401 `Connexion requise.`, ce qui est le comportement attendu pour une route protégée; aucun test authentifié avec un compte administrateur n'a été réalisé.
 - Le code de création de profil contenait une faute `toISOstring()` qui empêchait l'initialisation d'un profil neuf. Elle est corrigée en `toISOString()`.
 - Les routes vendeur vérifient désormais que les fichiers logo, couverture et médias de produit portent une permission de lecture ou suppression attribuée au propriétaire avant de les associer à une boutique ou à un produit. Cela évite qu'un vendeur puisse publier le fichier privé d'un autre compte en devinant son identifiant.
