@@ -43,14 +43,15 @@ La lecture du catalogue public est maintenant reliée à TablesDB via `catalogue
 - Limite importante : le contrôle de validation administrateur et l'attribution des permissions publiques d'une boutique doivent encore être fiabilisés côté serveur. Les lignes de la table `shops` ont actuellement `rowSecurity: true` et aucune permission publique au niveau de la table; une boutique en attente ne doit donc pas être considérée comme publiquement accessible simplement parce que son lien existe.
 - Les modifications de code sont enregistrées dans GitHub. Le déploiement et le parcours réel de modification d'une boutique avec upload d'images restent à tester dans le navigateur.
 
-## État de la sécurisation de la modération — vérification du 13 novembre 2026
+## État de la sécurisation de la modération — vérification du 14 novembre 2026
 
-- La fonction Appwrite `african-shop-api` existe et son dernier déploiement est indiqué `ready`.
-- Le test réel de `POST /moderation/queue` échoue encore avec HTTP 500 et le message `Configuration serveur Appwrite incomplète.`. La modération serveur n'est donc pas opérationnelle et aucune validation ne doit être considérée comme fiable.
-- La table `shops` utilise `rowSecurity: true` et n'a pas de permission globale. Les boutiques sont créées avec des permissions de lecture/modification réservées à leur propriétaire. Le code d'administration du navigateur tente encore de modifier directement les lignes; il devra être remplacé par un appel serveur qui vérifie le rôle administrateur et attribue explicitement la lecture publique après validation.
-- Le code actuel de validation des boutiques ne leur attribue pas la permission `read(any)`, contrairement au chemin de validation des produits. Une boutique passée à `active` ne devient donc pas automatiquement lisible par les visiteurs.
-- Le catalogue Appwrite a retourné zéro boutique et zéro produit lors de cette vérification. Aucun parcours réel d'approbation ou d'achat n'a été possible.
-- Les essais de configuration n'ont pas résolu l'erreur. Aucune clé API durable n'a été conservée; les variables de test et la clé temporairement créée ont été supprimées. Ne jamais placer une clé serveur dans le navigateur.
+- La fonction Appwrite `african-shop-api` est activée; son déploiement actif `6af8684f2a949bbdf061` est indiqué `ready`.
+- Le routage de la fonction vers `/moderation/queue` est reconnu. Une exécution de contrôle sans session utilisateur répond HTTP 401 `Connexion requise.`, ce qui est le comportement attendu pour une route protégée; aucun test authentifié avec un compte administrateur n'a été réalisé.
+- Le code de création de profil contenait une faute `toISOstring()` qui empêchait l'initialisation d'un profil neuf. Elle est corrigée en `toISOString()`.
+- Les routes vendeur vérifient désormais que les fichiers logo, couverture et médias de produit portent une permission de lecture ou suppression attribuée au propriétaire avant de les associer à une boutique ou à un produit. Cela évite qu'un vendeur puisse publier le fichier privé d'un autre compte en devinant son identifiant.
+- Lorsqu'un vendeur remplace ou retire le logo ou la couverture d'une boutique déjà active, l'ancienne image perd sa permission publique après l'enregistrement; un échec de nettoyage est journalisé sans annuler la mise à jour.
+- Les tables `shops`, `products` et `orders` ont `rowSecurity: true`. Les boutiques et produits sont filtrés par `status = active` pour le catalogue. La base ne contient actuellement aucune boutique ni aucun produit; les tests réels d'approbation, de publication média et d'achat restent donc impossibles.
+- Les transitions de commandes multi-boutiques, le stock et le paiement en ligne ne sont pas encore finalisés. Aucune transaction d'achat réelle n'est déclarée opérationnelle.
 
 ## Démarrage local
 
