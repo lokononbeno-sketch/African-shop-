@@ -9,7 +9,7 @@
   const functions=new Appwrite.Functions(client);
   const apiCall=async(path,method="GET",data)=>{
     const execution=await functions.createExecution({
-      functionId:"african-shop-api",path,method,
+      functionId:"african-shop-api",xpath:path,method,
       body:data===undefined?"":JSON.stringify(data),async:false
     });
     const status=Number(execution.responseStatusCode||500);
