@@ -86,3 +86,5 @@ npx serve .
 - Test technique effectué dans Appwrite le 15/11/2026 : une ligne produit temporaire avec un stock de 2 a été décrémentée de 1 par une opération transactionnelle; le résultat lu était 1. La ligne de test a ensuite été supprimée.
 - Limites non levées : aucun compte acheteur/vendeur de test n'est disponible dans cette exécution, et les tables de production sont vides. Le parcours complet d'achat, les transitions depuis l'interface et le paiement réel ne sont donc pas déclarés testés. Aucun paiement en ligne n'est configuré.
 
+- Couche de compatibilité TablesDB : les réponses de lignes sont normalisées qu'Appwrite fournisse les colonnes à plat ou dans `data`. Les listes, lectures, créations et mises à jour serveur utilisent le même format interne.
+- Vérification de forme le 15/11/2026 : les réponses du connecteur TablesDB exposaient les colonnes sous `data`; le normaliseur est donc appliqué à toutes les opérations de lignes de l'API.
