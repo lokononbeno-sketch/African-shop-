@@ -52,20 +52,51 @@ async function appwriteRequest(ctx, path, method = 'GET', payload) {
 
 const tablePath = table => `/tablesdb/${DATABASE_ID}/tables/${table}/rows`;
 
-async function listRows(ctx, table, queries = [], limit = 100) {
-  return appwriteRequest(ctx, `${tablePath(table)}?${queryString(queries, limit)}`);
+function withTransaction(path, transactionId) {
+  if (!transactionId) return path;
+  return path + (path.includes('?') ? '&' : '?') + 'transactionId=' + encodeURIComponent(transactionId);
 }
 
-async function getRow(ctx, table, rowId) {
-  return appwriteRequest(ctx, `${tablePath(table)}/${encodeURIComponent(rowId)}`);
+async function listRows(ctx, table, queries = [], limit = 100, transactionId) {
+  return appwriteRequest(ctx, withTransaction(tablePath(table) + '?' + queryString(queries, limit), transactionId));
 }
 
-async function createRow(ctx, table, data, permissions, rowId = id()) {
-  return appwriteRequest(ctx, tablePath(table), 'POST', { rowId, data, permissions });
+async function getRow(ctx, table, rowId, transactionId) {
+  return appwriteRequest(ctx, withTransaction(tablePath(table) + '/' + encodeURIComponent(rowId), transactionId));
 }
 
-async function updateRow(ctx, table, rowId, data, permissions) {
-  return appwriteRequest(ctx, `${tablePath(table)}/${encodeURIComponent(rowId)}`, 'PATCH', { data, permissions });
+async function createRow(ctx, table, data, permissions, rowId = id(), transactionId) {
+  return appwriteRequest(ctx, withTransaction(tablePath(table), transactionId), 'POST', { rowId, data, permissions });
+}
+
+async function updateRow(ctx, table, rowId, data, permissions, transactionId) {
+  return appwriteRequest(ctx, withTransaction(tablePath(table) + '/' + encodeURIComponent(rowId), transactionId), 'PATCH', { data, permissions });
+}
+
+async function createTransaction(ctx, ttl = 90) {
+  return appwriteRequest(ctx, '/tablesdb/transactions', 'POST', { ttl });
+}
+
+async function updateTransaction(ctx, transactionId, commit) {
+  return appwriteRequest(ctx, '/tablesdb/transactions/' + encodeURIComponent(transactionId), 'PATCH', commit ? { commit: true } : { rollback: true });
+}
+
+async function decrementRowColumn(ctx, table, rowId, column, value, transactionId, min = 0) {
+  const path = tablePath(table) + '/' + encodeURIComponent(rowId) + '/' + encodeURIComponent(column) + '/decrement';
+  return appwriteRequest(ctx, withTransaction(path, transactionId), 'PATCH', { value, min });
+}
+
+function aggregateOrderStatus(items) {
+  const statuses = (items || []).map(item => item.status || 'pending_confirmation');
+  if (!statuses.length || statuses.includes('pending_confirmation')) return 'pending_confirmation';
+  if (statuses.every(status => status === 'delivered')) return 'delivered';
+  if (statuses.every(status => status === 'rejected')) return 'rejected';
+  if (statuses.every(status => status === 'cancelled')) return 'cancelled';
+  if (statuses.some(status => status === 'rejected' || status === 'cancelled')) return 'partially_rejected';
+  if (statuses.includes('out_for_delivery')) return 'out_for_delivery';
+  if (statuses.includes('ready_for_pickup')) return 'ready_for_pickup';
+  if (statuses.includes('preparing')) return 'preparing';
+  return 'confirmed';
 }
 
 async function deleteRow(ctx, table, rowId) {
@@ -276,32 +307,36 @@ async function handle({ req, res, log, error }) {
         throw new HttpError('Quantité de panier invalide.', 400);
       }
 
-      const validated = [];
-      let total = 0;
-      for (const [productId, quantity] of quantities) {
-        const product = await getRow(ctx, 'products', productId);
-        if (product.status !== 'active') throw new HttpError('Un produit du panier n’est plus disponible.', 409);
-        const shop = await getRow(ctx, 'shops', product.shop_id);
-        if (shop.status !== 'active') throw new HttpError('Une boutique du panier n’est plus active.', 409);
-        const price = Number(product.price_fcfa);
-        const stock = Number(product.stock_quantity || 0);
-        if (!Number.isSafeInteger(price) || price < 1 || !Number.isSafeInteger(stock) || stock < quantity) {
-          throw new HttpError('Stock insuffisant ou prix invalide pour « ' + clean(product.title, 180) + ' ».', 409);
-        }
-        const lineTotal = price * quantity;
-        if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(total + lineTotal)) {
-          throw new HttpError('Le montant de la commande est trop élevé.', 400);
-        }
-        total += lineTotal;
-        validated.push({ product, shop, quantity, price, lineTotal });
-      }
-
-      const orderId = id();
-      const orderNumber = 'AS-' + Date.now().toString(36).toUpperCase() + '-' + orderId.slice(0, 6).toUpperCase();
-      const createdItemIds = [];
-      let order = null;
+      const transaction = await createTransaction(ctx, 90);
+      let committed = false;
       try {
-        order = await createRow(ctx, 'orders', {
+        const validated = [];
+        let total = 0;
+        for (const [productId, quantity] of quantities) {
+          const product = await getRow(ctx, 'products', productId, transaction.$id);
+          if (product.status !== 'active') throw new HttpError('Un produit du panier n’est plus disponible.', 409);
+          const shop = await getRow(ctx, 'shops', product.shop_id, transaction.$id);
+          if (shop.status !== 'active') throw new HttpError('Une boutique du panier n’est plus active.', 409);
+          const price = Number(product.price_fcfa);
+          const stock = Number(product.stock_quantity || 0);
+          if (!Number.isSafeInteger(price) || price < 1 || !Number.isSafeInteger(stock) || stock < quantity) {
+            throw new HttpError('Stock insuffisant ou prix invalide pour « ' + clean(product.title, 180) + ' ».', 409);
+          }
+          const lineTotal = price * quantity;
+          if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(total + lineTotal)) {
+            throw new HttpError('Le montant de la commande est trop élevé.', 400);
+          }
+          total += lineTotal;
+          validated.push({ product, shop, quantity, price, lineTotal });
+        }
+
+        for (const entry of validated) {
+          await decrementRowColumn(ctx, 'products', entry.product.$id, 'stock_quantity', entry.quantity, transaction.$id, 0);
+        }
+
+        const orderId = id();
+        const orderNumber = 'AS-' + Date.now().toString(36).toUpperCase() + '-' + orderId.slice(0, 6).toUpperCase();
+        const order = await createRow(ctx, 'orders', {
           buyer_id: user.$id,
           order_number: orderNumber,
           status: 'pending_confirmation',
@@ -312,14 +347,14 @@ async function handle({ req, res, log, error }) {
           delivery_city: deliveryCity,
           delivery_address: deliveryAddress,
           created_at: new Date().toISOString()
-        }, [permission('read', user.$id)], orderId);
+        }, [permission('read', user.$id)], orderId, transaction.$id);
 
         for (const entry of validated) {
           const itemPermissions = [...new Set([
             permission('read', user.$id),
             permission('read', entry.shop.owner_id)
           ])];
-          const item = await createRow(ctx, 'order_items', {
+          await createRow(ctx, 'order_items', {
             order_id: orderId,
             product_id: entry.product.$id,
             shop_id: entry.shop.$id,
@@ -328,34 +363,32 @@ async function handle({ req, res, log, error }) {
             quantity: entry.quantity,
             line_total_fcfa: entry.lineTotal,
             status: 'pending_confirmation'
-          }, itemPermissions);
-          createdItemIds.push(item.$id);
+          }, itemPermissions, undefined, transaction.$id);
         }
+
+        await updateTransaction(ctx, transaction.$id, true);
+        committed = true;
+        return res.json({
+          order: { $id: order.$id, order_number: orderNumber, total_fcfa: total, status: 'pending_confirmation' },
+          item_count: validated.length
+        }, 201);
       } catch (writeError) {
-        for (const itemId of createdItemIds.reverse()) {
-          try { await deleteRow(ctx, 'order_items', itemId); }
-          catch (cleanupError) { log('Rollback ligne de commande ' + itemId + ' impossible: ' + cleanupError.message); }
+        if (!committed) {
+          try { await updateTransaction(ctx, transaction.$id, false); }
+          catch (rollbackError) { log('Rollback transaction commande impossible: ' + rollbackError.message); }
         }
-        if (order?.$id) {
-          try { await deleteRow(ctx, 'orders', order.$id); }
-          catch (cleanupError) { log('Rollback commande ' + order.$id + ' impossible: ' + cleanupError.message); }
+        if (writeError instanceof HttpError) throw writeError;
+        if (Number(writeError.status) === 409) {
+          throw new HttpError('Le stock a changé pendant la commande. Vérifie le panier et réessaie.', 409);
         }
         throw writeError;
       }
-
-      return res.json({
-        order: { $id: order.$id, order_number: orderNumber, total_fcfa: total, status: 'pending_confirmation' },
-        item_count: createdItemIds.length
-      }, 201);
     }
 
     if (path === '/seller/order-status' && method === 'POST') {
       const itemId = clean(body.item_id, 36);
       const nextStatus = clean(body.status, 30);
       if (!itemId || !nextStatus) throw new HttpError('Ligne de commande ou statut manquant.', 400);
-      const item = await getRow(ctx, 'order_items', itemId);
-      const shop = await getRow(ctx, 'shops', item.shop_id);
-      if (shop.owner_id !== user.$id) throw new HttpError('Cette commande ne concerne pas ta boutique.', 403);
       const transitions = {
         pending_confirmation: ['confirmed', 'rejected'],
         confirmed: ['preparing'],
@@ -363,12 +396,38 @@ async function handle({ req, res, log, error }) {
         ready_for_pickup: ['delivered'],
         out_for_delivery: ['delivered']
       };
-      const currentStatus = item.status || 'pending_confirmation';
-      if (!(transitions[currentStatus] || []).includes(nextStatus)) {
-        throw new HttpError('Cette transition de commande n’est pas autorisée.', 409);
+      const transaction = await createTransaction(ctx, 60);
+      let committed = false;
+      try {
+        const item = await getRow(ctx, 'order_items', itemId, transaction.$id);
+        const shop = await getRow(ctx, 'shops', item.shop_id, transaction.$id);
+        if (shop.owner_id !== user.$id) throw new HttpError('Cette commande ne concerne pas ta boutique.', 403);
+        const currentStatus = item.status || 'pending_confirmation';
+        if (!(transitions[currentStatus] || []).includes(nextStatus)) {
+          throw new HttpError('Cette transition de commande n’est pas autorisée.', 409);
+        }
+        const order = await getRow(ctx, 'orders', item.order_id, transaction.$id);
+        await updateRow(ctx, 'orders', order.$id, { status: order.status || 'pending_confirmation' }, order.$permissions, transaction.$id);
+        const updated = await updateRow(ctx, 'order_items', itemId, { status: nextStatus }, item.$permissions, transaction.$id);
+        const allItems = await listRows(ctx, 'order_items', [
+          { method: 'equal', attribute: 'order_id', values: [item.order_id] }
+        ], 100, transaction.$id);
+        const orderStatus = aggregateOrderStatus(allItems.rows || []);
+        await updateRow(ctx, 'orders', order.$id, { status: orderStatus }, order.$permissions, transaction.$id);
+        await updateTransaction(ctx, transaction.$id, true);
+        committed = true;
+        return res.json({ item: { $id: updated.$id, status: nextStatus }, order_status: orderStatus });
+      } catch (statusError) {
+        if (!committed) {
+          try { await updateTransaction(ctx, transaction.$id, false); }
+          catch (rollbackError) { log('Rollback transaction statut impossible: ' + rollbackError.message); }
+        }
+        if (statusError instanceof HttpError) throw statusError;
+        if (Number(statusError.status) === 409) {
+          throw new HttpError('Une autre mise à jour a modifié cette commande. Recharge et réessaie.', 409);
+        }
+        throw statusError;
       }
-      const updated = await updateRow(ctx, 'order_items', itemId, { status: nextStatus }, item.$permissions);
-      return res.json({ item: { $id: updated.$id, status: updated.status } });
     }
 
     if (path === '/moderation/queue' && method === 'GET') {
@@ -393,12 +452,30 @@ async function handle({ req, res, log, error }) {
       }
       const table = type === 'shop' ? 'shops' : 'products';
       const row = await getRow(ctx, table, rowId);
-      const ownerId = type === 'shop' ? row.owner_id : (await getRow(ctx, 'shops', row.shop_id)).owner_id;
-      if (type === 'product' && action === 'approve') {
-        const shop = await getRow(ctx, 'shops', row.shop_id);
-        if (shop.status !== 'active') throw new HttpError('La boutique doit être validée avant ses produits.', 409);
+      if (row.status !== 'pending') throw new HttpError('Cet élément n’est plus en attente de validation.', 409);
+      const shop = type === 'product' ? await getRow(ctx, 'shops', row.shop_id) : null;
+      const ownerId = type === 'shop' ? row.owner_id : shop.owner_id;
+      if (type === 'product' && action === 'approve' && shop.status !== 'active') {
+        throw new HttpError('La boutique doit être validée avant ses produits.', 409);
       }
       const makePublic = action === 'approve';
+
+      if (type === 'shop' && !makePublic) {
+        const related = await listRows(ctx, 'products', [
+          { method: 'equal', attribute: 'shop_id', values: [row.$id] }
+        ], 100);
+        for (const product of related.rows || []) {
+          const productFiles = [
+            ...(Array.isArray(product.media_file_ids) ? product.media_file_ids : []),
+            product.image_file_id
+          ];
+          for (const fileId of [...new Set(productFiles.filter(Boolean))]) {
+            await setFileVisibility(ctx, fileId, ownerId, false);
+          }
+          await updateRow(ctx, 'products', product.$id, { status: 'rejected' }, ownerPermissions(product.$permissions, ownerId, false));
+        }
+      }
+
       const fileIds = type === 'shop'
         ? [row.logo_file_id, row.cover_file_id]
         : [...(Array.isArray(row.media_file_ids) ? row.media_file_ids : []), row.image_file_id];
