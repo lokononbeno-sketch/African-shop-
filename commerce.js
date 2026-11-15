@@ -8,9 +8,11 @@
   const {ID,Query,Permission,Role}=Appwrite;
   const functions=new Appwrite.Functions(client);
   const apiCall=async(path,method="GET",data)=>{
+    const sessionJwt=await account.createJWT();
     const execution=await functions.createExecution({
       functionId:"african-shop-api",xpath:path,method,
-      body:data===undefined?"":JSON.stringify(data),async:false
+      body:data===undefined?"":JSON.stringify(data),async:false,
+      headers:{"x-appwrite-user-jwt":sessionJwt.jwt}
     });
     const status=Number(execution.responseStatusCode||500);
     let payload={};
