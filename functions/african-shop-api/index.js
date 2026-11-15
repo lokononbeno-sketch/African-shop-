@@ -52,25 +52,42 @@ async function appwriteRequest(ctx, path, method = 'GET', payload) {
 
 const tablePath = table => `/tablesdb/${DATABASE_ID}/tables/${table}/rows`;
 
+function normalizeRow(row) {
+  if (!row || typeof row !== 'object') return row;
+  if (row.data && typeof row.data === 'object' && !Array.isArray(row.data)) {
+    return { ...row, ...row.data, data: row.data };
+  }
+  return row;
+}
+
+function normalizeRowList(result) {
+  if (!result || typeof result !== 'object') return result;
+  return { ...result, rows: Array.isArray(result.rows) ? result.rows.map(normalizeRow) : [] };
+}
+
 function withTransaction(path, transactionId) {
   if (!transactionId) return path;
   return path + (path.includes('?') ? '&' : '?') + 'transactionId=' + encodeURIComponent(transactionId);
 }
 
 async function listRows(ctx, table, queries = [], limit = 100, transactionId) {
-  return appwriteRequest(ctx, withTransaction(tablePath(table) + '?' + queryString(queries, limit), transactionId));
+  const result = await appwriteRequest(ctx, withTransaction(tablePath(table) + '?' + queryString(queries, limit), transactionId));
+  return normalizeRowList(result);
 }
 
 async function getRow(ctx, table, rowId, transactionId) {
-  return appwriteRequest(ctx, withTransaction(tablePath(table) + '/' + encodeURIComponent(rowId), transactionId));
+  const result = await appwriteRequest(ctx, withTransaction(tablePath(table) + '/' + encodeURIComponent(rowId), transactionId));
+  return normalizeRow(result);
 }
 
 async function createRow(ctx, table, data, permissions, rowId = id(), transactionId) {
-  return appwriteRequest(ctx, withTransaction(tablePath(table), transactionId), 'POST', { rowId, data, permissions });
+  const result = await appwriteRequest(ctx, withTransaction(tablePath(table), transactionId), 'POST', { rowId, data, permissions });
+  return normalizeRow(result);
 }
 
 async function updateRow(ctx, table, rowId, data, permissions, transactionId) {
-  return appwriteRequest(ctx, withTransaction(tablePath(table) + '/' + encodeURIComponent(rowId), transactionId), 'PATCH', { data, permissions });
+  const result = await appwriteRequest(ctx, withTransaction(tablePath(table) + '/' + encodeURIComponent(rowId), transactionId), 'PATCH', { data, permissions });
+  return normalizeRow(result);
 }
 
 async function createTransaction(ctx, ttl = 90) {
