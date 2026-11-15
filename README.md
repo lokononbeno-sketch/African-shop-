@@ -76,3 +76,13 @@ npx serve .
 - Ne jamais faire confiance à un rôle administrateur stocké sans contrôle serveur.
 - Ne jamais exposer une clé API secrète ou service_role dans le navigateur.
 - Tester l'authentification, les médias, les droits vendeurs et les commandes avant de publier.
+
+## Commandes, stock et modération — 15 novembre 2026
+
+- L'appel du service sécurisé depuis le navigateur transmet explicitement le JWT de la session Appwrite dans l'en-tête `x-appwrite-user-jwt`; la fonction vérifie ensuite la session avec l'endpoint Account.
+- La création d'une commande utilise une transaction TablesDB : validation des produits et boutiques, décrément atomique de `products.stock_quantity` avec une borne minimale de zéro, création de la commande et de ses lignes, puis validation unique de la transaction. Un conflit de stock annule l'ensemble des écritures.
+- Les changements de statut vendeur sont transactionnels. Le statut de la commande principale est recalculé à partir des statuts de ses lignes (`pending_confirmation`, `confirmed`, `preparing`, `ready_for_pickup`, `out_for_delivery`, `delivered`, `rejected`, `cancelled`, `partially_rejected`).
+- La modération refuse les éléments qui ne sont plus en attente. Le rejet d'une boutique rejette aussi ses produits et retire la lecture publique de leurs médias.
+- Test technique effectué dans Appwrite le 15/11/2026 : une ligne produit temporaire avec un stock de 2 a été décrémentée de 1 par une opération transactionnelle; le résultat lu était 1. La ligne de test a ensuite été supprimée.
+- Limites non levées : aucun compte acheteur/vendeur de test n'est disponible dans cette exécution, et les tables de production sont vides. Le parcours complet d'achat, les transitions depuis l'interface et le paiement réel ne sont donc pas déclarés testés. Aucun paiement en ligne n'est configuré.
+
