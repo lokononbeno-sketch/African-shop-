@@ -88,3 +88,4 @@ npx serve .
 
 - Couche de compatibilité TablesDB : les réponses de lignes sont normalisées qu'Appwrite fournisse les colonnes à plat ou dans `data`. Les listes, lectures, créations et mises à jour serveur utilisent le même format interne.
 - Vérification de forme le 15/11/2026 : les réponses du connecteur TablesDB exposaient les colonnes sous `data`; le normaliseur est donc appliqué à toutes les opérations de lignes de l'API.
+- Déploiement Appwrite actif au 15/11/2026 : `6af9bb06d09cbd03dfc2` (état `ready`, runtime Node 22). Un appel anonyme à `POST /orders/create` a été exécuté après activation et a renvoyé `401 Connexion requise`, ce qui confirme le démarrage du nouveau déploiement et le contrôle d'authentification. Ce test ne valide pas un achat authentifié.
