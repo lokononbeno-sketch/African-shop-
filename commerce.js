@@ -53,7 +53,7 @@
     shell("Espace vendeur",'<div class="as-card"><p>Connecté : <b>'+esc(user.email||user.phone||user.name)+'</b></p><div class="as-actions"><button class="btn" id="as-logout">Déconnexion</button>'+(p&&p.role==="admin"?'<a class="btn" href="#/admin">Administration</a>':'')+'</div></div>'+
       '<div class="as-card"><h2>Mes boutiques</h2><p class="as-muted">Tu peux créer et gérer plusieurs boutiques avec le même compte.</p>'+(shops.rows.map(x=>{const link=location.origin+location.pathname+'#/b/'+encodeURIComponent(x.$id);const msg=encodeURIComponent('Découvre la boutique '+x.name+' sur African Shop '+link);return '<div class="as-row"><div><b>'+esc(x.name)+'</b><div class="as-muted">'+esc(x.city)+' · '+esc(x.status)+'</div><div class="as-actions"><a class="btn" href="https://wa.me/?text='+msg+'" target="_blank" rel="noopener">WhatsApp</a><a class="btn" href="https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(link)+'" target="_blank" rel="noopener">Facebook</a><button class="btn" type="button" data-copy-shop="'+esc(link)+'">Copier le lien</button></div></div><button class="btn" type="button" data-select-shop="'+x.$id+'">'+(shop&&shop.$id===x.$id?'Sélectionnée':'Gérer')+'</button></div>';}).join("")||'<p class="as-muted">Tu n’as pas encore de boutique.</p>')+'</div>'+
       '<div class="as-card"><h2>Créer une nouvelle boutique</h2><form id="as-shop"><label>Nom de la boutique</label><input name="name" maxlength="160" required><div class="as-grid"><div><label>Catégorie principale</label><input name="category" maxlength="80"></div><div><label>Ville</label><input name="city" maxlength="100" required></div></div><label>Quartier / adresse</label><input name="district" maxlength="120"><label>Numéro WhatsApp professionnel</label><input name="whatsapp_number" type="tel" placeholder="+229..." maxlength="24"><label>Présentation de la boutique</label><textarea name="description" maxlength="2000"></textarea><button class="btn" type="submit">Créer ma boutique</button></form></div>'+
-      (shop?'<div class="as-card"><h2>Gérer : '+esc(shop.name)+'</h2><p class="as-muted">Statut : '+esc(shop.status)+' · '+esc(shop.city)+'</p><form id="as-shop-edit"><h3>Personnaliser ma boutique</h3><label>Nom de la boutique</label><input name="name" maxlength="160" required value="'+esc(shop.name)+'"><div class="as-grid"><div><label>Catégorie</label><input name="category" maxlength="80" value="'+esc(shop.category||"")+'"></div><div><label>Ville</label><input name="city" maxlength="100" required value="'+esc(shop.city||"")+'"></div></div><label>Quartier / adresse</label><input name="district" maxlength="120" value="'+esc(shop.district||"")+'"><label>WhatsApp professionnel</label><input name="whatsapp_number" type="tel" maxlength="24" value="'+esc(shop.whatsapp_number||"")+'"><label>Description</label><textarea name="description" maxlength="2000">'+esc(shop.description||"")+'</textarea><div class="as-grid"><div><label>Logo (image)</label><input name="logo" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div><label>Image de couverture</label><input name="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div></div><p class="as-muted">Images uniquement, 50 Mo maximum par fichier. Laisse un champ vide pour conserver l’image actuelle.</p><button class="btn" type="submit">Enregistrer les modifications</button></form><h2>Ajouter un produit</h2><form id="as-product"><label>Nom</label><input name="title" required><label>Description</label><textarea name="description"></textarea><div class="as-grid"><div><label>Prix (FCFA)</label><input name="price_fcfa" type="number" min="1" required></div><div><label>Stock</label><input name="stock_quantity" type="number" min="0" value="1"></div></div><label>Catégorie</label><input name="category"><label>Photos et vidéos</label><input name="media" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" multiple><p class="as-muted">Maximum 50 Mo par fichier.</p><button class="btn" type="submit">Publier pour validation</button></form></div>':'<div class="as-card"><p>Crée ta première boutique pour commencer à publier des articles.</p></div>')+
+      (shop?'<div class="as-card"><h2>Gérer : '+esc(shop.name)+'</h2><p class="as-muted">Statut : '+esc(shop.status)+' · '+esc(shop.city)+'</p><form id="as-shop-edit"><h3>Personnaliser ma boutique</h3><label>Nom de la boutique</label><input name="name" maxlength="160" required value="'+esc(shop.name)+'"><div class="as-grid"><div><label>Catégorie</label><input name="category" maxlength="80" value="'+esc(shop.category||"")+'"></div><div><label>Ville</label><input name="city" maxlength="100" required value="'+esc(shop.city||"")+'"></div></div><label>Quartier / adresse</label><input name="district" maxlength="120" value="'+esc(shop.district||"")+'"><label>WhatsApp professionnel</label><input name="whatsapp_number" type="tel" maxlength="24" value="'+esc(shop.whatsapp_number||"")+'"><label>Description</label><textarea name="description" maxlength="2000">'+esc(shop.description||"")+'</textarea><div class="as-grid"><div><label>Logo (image)</label><input name="logo" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div><label>Image de couverture</label><input name="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div></div><p class="as-muted">Images uniquement, 50 Mo maximum par fichier. Laisse un champ vide pour conserver l’image actuelle.</p><button class="btn" type="submit">Enregistrer les modifications</button></form><h2>Ajouter un produit</h2><form id="as-product"><label>Nom</label><input name="title" required><label>Description</label><textarea name="description"></textarea><div class="as-grid"><div><label>Prix (FCFA)</label><input name="price_fcfa" type="number" min="1" required></div><div><label>Stock</label><input name="stock_quantity" type="number" min="0" value="1"></div></div><label>Catégorie</label><input name="category"><label>Photos et vidéos</label><input name="media" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple><p class="as-muted">12 fichiers maximum, 50 Mo par fichier. Photos et vidéos courantes.</p><button class="btn" type="submit">Publier pour validation</button></form></div>':'<div class="as-card"><p>Crée ta première boutique pour commencer à publier des articles.</p></div>')+
       '<div class="as-card"><h2>Mes produits</h2>'+(products.rows.map(x=>{const link=location.origin+location.pathname+'#/p/'+encodeURIComponent(x.$id);const text='Découvre '+x.title+' sur African Shop';const msg=encodeURIComponent(text+' '+link);return '<div class="as-row"><div><b>'+esc(x.title)+'</b><div class="as-muted">'+money(x.price_fcfa)+' · Stock '+x.stock_quantity+' · '+esc(x.status)+'</div><div class="as-actions"><a class="btn" href="https://wa.me/?text='+msg+'" target="_blank" rel="noopener">Partager WhatsApp</a><a class="btn" href="https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(link)+'" target="_blank" rel="noopener">Partager Facebook</a><button class="btn" type="button" data-copy-product="'+esc(link)+'">Copier le lien</button></div></div></div>';}).join("")||'<p class="as-muted">Aucun produit dans cette boutique.</p>')+'</div>'+
       '<div class="as-card"><h2>Commandes reçues</h2>'+(sellerOrders.map(o=>{const status=o.status||"pending_confirmation";const labels={pending_confirmation:"À confirmer",confirmed:"Confirmée",preparing:"En préparation",ready_for_pickup:"Prête au retrait",out_for_delivery:"En livraison",delivered:"Livrée",rejected:"Refusée",cancelled:"Annulée"};const next={pending_confirmation:["confirmed","rejected"],confirmed:["preparing"],preparing:["ready_for_pickup","out_for_delivery"],ready_for_pickup:["delivered"],out_for_delivery:["delivered"]};return '<div class="as-row"><div><b>'+esc(o.title_snapshot)+'</b><div class="as-muted">Commande : '+esc(o.order_id)+'</div><div class="as-muted">Quantité : '+o.quantity+' · Prix unitaire : '+money(o.price_fcfa)+'</div><div>'+money(o.line_total_fcfa)+'</div><div class="as-muted">État : '+esc(labels[status]||status)+'</div><div class="as-actions">'+(next[status]||[]).map(value=>'<button class="btn" type="button" data-order-status="'+esc(o.$id)+'" data-next-status="'+value+'">'+esc(labels[value]||value)+'</button>').join("")+'</div></div></div>';}).join("")||'<p class="as-muted">Aucune commande pour cette boutique.</p>')+'</div>');
     document.querySelectorAll("[data-select-shop]").forEach(btn=>btn.onclick=()=>{sessionStorage.setItem("as_selected_shop",btn.dataset.selectShop);vendorPage();});
@@ -73,6 +73,7 @@
     if(editForm)editForm.onsubmit=async e=>{
       e.preventDefault();
       const button=editForm.querySelector("button");button.disabled=true;
+      const uploadedIds=[];
       try{
         const fd=new FormData(editForm);
         const data={
@@ -84,37 +85,50 @@
           description:String(fd.get("description")||"").trim()
         };
         if(!data.name||!data.city)throw Error("Le nom et la ville sont obligatoires.");
+        const allowedImages=new Set(["image/jpeg","image/png","image/webp","image/gif"]);
         for(const [field,key] of [["logo","logo_file_id"],["cover","cover_file_id"]]){
           const file=fd.get(field);
           if(!file||!file.size)continue;
-          if(!file.type.startsWith("image/"))throw Error("Le logo et la couverture doivent être des images.");
+          if(!allowedImages.has(file.type))throw Error("Utilise une image JPG, PNG, WebP ou GIF.");
           if(file.size>50*1024*1024)throw Error("Une image dépasse 50 Mo.");
           const stored=await storage.createFile({bucketId:C.bucketId,fileId:ID.unique(),file,permissions:[Permission.read(Role.user(user.$id)),Permission.delete(Role.user(user.$id))]});
+          uploadedIds.push(stored.$id);
           data[key]=stored.$id;
         }
         await apiCall("/shops/update","POST",{shop_id:shop.$id,...data});
+        uploadedIds.length=0;
         window.dispatchEvent(new Event("africanshop:refresh-catalog"));
         vendorPage();
-      }catch(err){msg(err.message||"Mise à jour impossible.",true);button.disabled=false;}
+      }catch(err){
+        if(uploadedIds.length)await Promise.all(uploadedIds.map(fileId=>storage.deleteFile({bucketId:C.bucketId,fileId}).catch(()=>null)));
+        msg(err.message||"Mise à jour impossible.",true);button.disabled=false;
+      }
     };
     const pf=document.querySelector("#as-product");if(pf)pf.onsubmit=async e=>{
-      e.preventDefault();const b=pf.querySelector("button");b.disabled=true;let ids=[];
+      e.preventDefault();const b=pf.querySelector("button");b.disabled=true;const ids=[];const types=[];
       try{
         const fd=new FormData(pf);
-        for(const file of fd.getAll("media")){
-          if(!file.size)continue;
+        const files=fd.getAll("media").filter(file=>file.size);
+        if(files.length>12)throw Error("Tu peux ajouter 12 fichiers maximum.");
+        const allowedTypes=new Set(["image/jpeg","image/png","image/webp","image/gif","video/mp4","video/webm","video/quicktime"]);
+        for(const file of files){
+          if(!allowedTypes.has(file.type))throw Error("Format non accepté. Utilise JPG, PNG, WebP, GIF, MP4, WebM ou MOV.");
           if(file.size>50*1024*1024)throw Error("Un fichier dépasse 50 Mo.");
           const stored=await storage.createFile({bucketId:C.bucketId,fileId:ID.unique(),file,permissions:[Permission.read(Role.user(user.$id)),Permission.delete(Role.user(user.$id))]});
-          ids.push(stored.$id);
+          ids.push(stored.$id);types.push(file.type);
         }
+        const imageIndex=types.findIndex(type=>type.startsWith("image/"));
         await apiCall("/products/create","POST",{
           shop_id:shop.$id,title:fd.get("title").trim(),description:fd.get("description"),
           price_fcfa:Number(fd.get("price_fcfa")),stock_quantity:Number(fd.get("stock_quantity")),
-          category:fd.get("category"),image_file_id:ids[0]||"",media_file_ids:ids
+          category:fd.get("category"),image_file_id:imageIndex>=0?ids[imageIndex]:"",media_file_ids:ids,media_mime_types:types
         });
         msg("Produit et médias enregistrés. Le produit attend la validation de l'administration.");
         vendorPage();
-      }catch(err){msg(err.message||"Enregistrement impossible.",true);b.disabled=false;}
+      }catch(err){
+        if(ids.length)await Promise.all(ids.map(fileId=>storage.deleteFile({bucketId:C.bucketId,fileId}).catch(()=>null)));
+        msg(err.message||"Enregistrement impossible.",true);b.disabled=false;
+      }
     };
   }
   async function adminPage(){
