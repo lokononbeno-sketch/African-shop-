@@ -98,3 +98,11 @@ npx serve .
 - L'interface vendeur limite l'envoi à 12 fichiers de 50 Mo maximum et supprime les fichiers nouvellement téléversés si l'enregistrement du produit ou de la fiche boutique échoue.
 - Le catalogue prépare une URL de visualisation pour les images et une URL de téléchargement/lecture pour les vidéos. La fiche publique d'un produit affiche la galerie complète au lieu d'ignorer les médias secondaires.
 - Aucun produit n'existe actuellement dans la base. L'affichage d'une galerie réelle, la lecture d'une vidéo depuis un compte public et le parcours d'upload authentifié restent à tester après déploiement.
+
+
+## Déploiement de la galerie médias — 17 novembre 2026
+
+- La fonction `african-shop-api` a été redéployée avec la validation serveur des types MIME et l'enregistrement de `media_mime_types`. Déploiement actif : `6afc5369e56affa56c92` (Node.js 22, état `ready`).
+- Vérification d'exécution sans JWT sur `GET /moderation/queue` : HTTP 401 `Connexion requise.`, depuis le déploiement actif. Ce contrôle confirme le démarrage de la fonction et le garde d'authentification, mais ne remplace pas un test avec un compte vendeur.
+- La table `products` expose maintenant `media_mime_types` comme tableau de varchar (120 caractères), état Appwrite `available`.
+- Aucun compte de test vendeur/acheteur et aucun produit ne sont présents. Les uploads authentifiés, la lecture publique des vidéos et le parcours complet d'achat restent non vérifiés.
