@@ -25,6 +25,13 @@
 
   /* ---------- Éléments d'interface ---------- */
   const visuel = p => `<div class="vis" style="--h:${teinte(p.id)}">${icoCat(p.categorie)}${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy" onerror="this.remove()">` : ""}${p.dispo === false ? '<div class="rupture">Indisponible</div>' : ""}</div>`;
+  const galerie = p => {
+    const medias = Array.isArray(p.medias) ? p.medias.filter(m => m && m.url) : [];
+    if (!medias.length) return visuel(p);
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:start">${medias.map(m => m.type && m.type.startsWith("video/")
+      ? `<video controls playsinline preload="metadata" style="width:100%;max-height:360px;aspect-ratio:4/3;object-fit:contain;background:#111;border-radius:14px"><source src="${esc(m.url)}" type="${esc(m.type)}">La lecture vidéo n'est pas prise en charge.</video>`
+      : `<img src="${esc(m.url)}" alt="${esc(p.nom)}" loading="lazy" style="width:100%;max-height:360px;aspect-ratio:4/3;object-fit:contain;background:#f3f3f3;border-radius:14px">`).join("")}</div>`;
+  };
   const avatar = (b, grand) => `<span class="av${grand ? " g" : ""}" style="--h:${teinte(b.id)}">${esc(initiales(b.nom))}${b.logo ? `<img src="${esc(b.logo)}" alt="" onerror="this.remove()">` : ""}</span>`;
   const lieu = b => [b.quartier, b.ville].filter(Boolean).join(", ");
   const carteProduit = p => { const b = bout(p.boutique) || {}; return `<a class="prod" href="#/p/${esc(p.id)}">${estExemple(p) ? '<em class="tag">Exemple</em>' : ""}${visuel(p)}<h3>${esc(p.nom)}</h3><p class="prix">${fmt(p.prix)}</p><p class="de">${esc(b.nom || "")}</p></a>`; };
@@ -114,7 +121,7 @@
     const b = bout(p.boutique) || {}, c = cat(p.categorie), dispo = p.dispo !== false;
     const autres = prodsDe(p.boutique).filter(x => x.id !== p.id).slice(0, 4);
     return { t: p.nom, n: "produits", h: `<div class="wrap page">${retour("#/c/" + c.id, c.nom)}
-      <div class="fiche"><div>${visuel(p)}</div><div style="display:grid;gap:14px">
+      <div class="fiche"><div>${galerie(p)}</div><div style="display:grid;gap:14px">
         <div><h1 style="margin-bottom:6px">${esc(p.nom)}</h1><p class="prix">${fmt(p.prix)}</p><p class="etat${dispo ? "" : " non"}" style="margin-top:6px">${dispo ? "En stock" : "Indisponible"}</p></div>
         ${estExemple(p) ? note : ""}
         <p style="color:#d3d8dd">${esc(p.description)}</p>
