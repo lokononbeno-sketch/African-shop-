@@ -89,3 +89,12 @@ npx serve .
 - Couche de compatibilité TablesDB : les réponses de lignes sont normalisées qu'Appwrite fournisse les colonnes à plat ou dans `data`. Les listes, lectures, créations et mises à jour serveur utilisent le même format interne.
 - Vérification de forme le 15/11/2026 : les réponses du connecteur TablesDB exposaient les colonnes sous `data`; le normaliseur est donc appliqué à toutes les opérations de lignes de l'API.
 - Déploiement Appwrite actif au 15/11/2026 : `6af9bb06d09cbd03dfc2` (état `ready`, runtime Node 22). Un appel anonyme à `POST /orders/create` a été exécuté après activation et a renvoyé `401 Connexion requise`, ce qui confirme le démarrage du nouveau déploiement et le contrôle d'authentification. Ce test ne valide pas un achat authentifié.
+
+
+## Galerie médias des produits — 17 novembre 2026
+
+- La table `products` possède le champ facultatif `media_mime_types` (tableau de chaînes, un type MIME par élément de `media_file_ids`). La colonne Appwrite est disponible depuis le 17/11/2026.
+- La création d'un produit vérifie côté serveur que chaque fichier appartient au vendeur et que son type MIME réel est l'un des formats autorisés : JPEG, PNG, WebP, GIF, MP4, WebM ou QuickTime/MOV. Le visuel principal doit être une image.
+- L'interface vendeur limite l'envoi à 12 fichiers de 50 Mo maximum et supprime les fichiers nouvellement téléversés si l'enregistrement du produit ou de la fiche boutique échoue.
+- Le catalogue prépare une URL de visualisation pour les images et une URL de téléchargement/lecture pour les vidéos. La fiche publique d'un produit affiche la galerie complète au lieu d'ignorer les médias secondaires.
+- Aucun produit n'existe actuellement dans la base. L'affichage d'une galerie réelle, la lecture d'une vidéo depuis un compte public et le parcours d'upload authentifié restent à tester après déploiement.
