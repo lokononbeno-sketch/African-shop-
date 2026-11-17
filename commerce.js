@@ -123,6 +123,7 @@
           price_fcfa:Number(fd.get("price_fcfa")),stock_quantity:Number(fd.get("stock_quantity")),
           category:fd.get("category"),image_file_id:imageIndex>=0?ids[imageIndex]:"",media_file_ids:ids,media_mime_types:types
         });
+        ids.length=0;
         msg("Produit et médias enregistrés. Le produit attend la validation de l'administration.");
         vendorPage();
       }catch(err){
