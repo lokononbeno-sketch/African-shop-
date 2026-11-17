@@ -280,10 +280,26 @@ async function handle({ req, res, log, error }) {
       }
       const shop = await getRow(ctx, 'shops', shopId);
       if (shop.owner_id !== user.$id) throw new HttpError('Cette boutique ne t’appartient pas.', 403);
-      const media = Array.isArray(body.media_file_ids) ? body.media_file_ids.filter(x => typeof x === 'string').slice(0, 12) : [];
-      const imageFileId = clean(body.image_file_id || media[0] || '', 36);
+      const media = Array.isArray(body.media_file_ids)
+        ? [...new Set(body.media_file_ids.filter(x => typeof x === 'string').map(x => clean(x, 36)).filter(Boolean))].slice(0, 12)
+        : [];
+      const imageFileId = clean(body.image_file_id || '', 36);
+      const allowedMediaTypes = new Set([
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+        'video/mp4', 'video/webm', 'video/quicktime'
+      ]);
+      const mediaTypeById = new Map();
       for (const fileId of [...new Set([...media, imageFileId].filter(Boolean))]) {
-        await getOwnedFile(ctx, fileId, user.$id);
+        const owned = await getOwnedFile(ctx, fileId, user.$id);
+        const mimeType = String(owned?.file?.mimeType || '').toLowerCase();
+        if (!allowedMediaTypes.has(mimeType)) {
+          throw new HttpError('Format de média non autorisé pour ce produit.', 415);
+        }
+        mediaTypeById.set(fileId, mimeType);
+      }
+      const resolvedImageId = imageFileId || media.find(fileId => mediaTypeById.get(fileId)?.startsWith('image/')) || '';
+      if (resolvedImageId && !mediaTypeById.get(resolvedImageId)?.startsWith('image/')) {
+        throw new HttpError('Le visuel principal doit être une image.', 400);
       }
       const product = await createRow(ctx, 'products', {
         shop_id: shopId,
@@ -293,8 +309,9 @@ async function handle({ req, res, log, error }) {
         stock_quantity: stock,
         status: 'pending',
         category: clean(body.category, 80),
-        image_file_id: imageFileId,
+        image_file_id: resolvedImageId,
         media_file_ids: media,
+        media_mime_types: media.map(fileId => mediaTypeById.get(fileId)),
         created_at: new Date().toISOString()
       }, [permission('read', user.$id), permission('delete', user.$id)]);
       return res.json({ product }, 201);
