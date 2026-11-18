@@ -176,9 +176,9 @@ async function getOwnedFile(ctx, fileId, ownerId) {
   const path = `/storage/buckets/${BUCKET_ID}/files/${encodeURIComponent(fileId)}`;
   const file = await appwriteRequest(ctx, path);
   const permissions = Array.isArray(file.$permissions) ? file.$permissions : [];
-  if (!permissions.includes(permission('read', ownerId)) &&
+  if (!permissions.includes(permission('read', ownerId)) ||
       !permissions.includes(permission('delete', ownerId))) {
-    throw new HttpError('Ce fichier média ne t’appartient pas.', 403);
+    throw new HttpError('Ce média doit avoir été téléversé et rester contrôlé par ton compte.', 403);
   }
   return { path, file };
 }
