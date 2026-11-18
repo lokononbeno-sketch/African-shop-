@@ -1,108 +1,75 @@
 # African Shop
 
-Plateforme de découverte de boutiques et produits, avec contact et commandes WhatsApp.
+Plateforme de découverte de boutiques et de produits, avec pages publiques, panier et commandes à confirmer directement avec les commerçants.
 
-## Backend actuel : Appwrite
+## Périmètre et configuration
 
-Le projet African Shop utilise son propre projet Appwrite. Les autres applications du propriétaire ne sont pas concernées.
+Ce dépôt concerne African Shop uniquement.
 
-- Projet Appwrite : `6af6ffad001c6379a9da`
-- Région : Frankfurt (`fra`)
+- Dépôt GitHub : [lokononbeno-sketch/African-shop-](https://github.com/lokononbeno-sketch/African-shop-)
+- Projet Appwrite : `6af6ffad001c6379a9da` (région Frankfurt)
 - Base TablesDB : `african_shop_db`
 - Bucket médias : `african_shop_media`
-- Tables créées : `profiles`, `shops`, `products`, `shopping_carts`, `cart_items`, `orders`, `order_items`
-- Plateforme Web autorisée : `lokononbeno-sketch.github.io`
+- Plateforme web déclarée : `lokononbeno-sketch.github.io`
 
-## Authentification
+Tables présentes : `profiles`, `shops`, `products`, `shopping_carts`, `cart_items`, `orders` et `order_items`.
 
-- E-mail : demande de code et vérification du code.
-- Téléphone : connexion par numéro et mot de passe, sans SMS, pour un compte téléphone déjà provisionné.
-- La création autonome d'un compte téléphone sans SMS nécessite un endpoint serveur sécurisé. Ne jamais placer de clé API secrète Appwrite dans le JavaScript du navigateur.
+## Parcours de l’application
+
+- Connexion par e-mail avec code à usage unique.
+- Espace vendeur multi-boutiques : un compte peut créer et gérer plusieurs boutiques.
+- Fiche boutique : modification du nom, de la catégorie, de la ville, du quartier, du numéro WhatsApp et de la description.
+- Médias de boutique : aperçu du logo et de la couverture actuels, remplacement ou retrait explicite. Les fichiers doivent être des images JPG, PNG, WebP ou GIF, de 50 Mo maximum.
+- Produits : création avec jusqu’à 12 photos ou vidéos, 50 Mo maximum par fichier.
+- Pages publiques : les liens utilisent les routes hash `#/b/{id}` pour les boutiques et `#/p/{id}` pour les produits.
+- Catalogue : seuls les éléments au statut `active` sont chargés; les produits ne sont affichés que si leur boutique est active.
+- Partage : liens copiables et partage vers WhatsApp/Facebook. Les aperçus enrichis Open Graph ne sont pas générés par les routes hash statiques.
+
+La connexion téléphonique est affichée comme indisponible dans l’interface actuelle. Le panier est conservé localement sur l’appareil.
+
+## API serveur et sécurité
+
+La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Au 18 novembre 2026, le déploiement actif vérifié est `6afc5369e56affa56c92`, état `ready`. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write.
+
+Toutes les routes métier exigent un JWT de session Appwrite transmis dans `x-appwrite-user-jwt`. La fonction vérifie ce JWT auprès de l’endpoint Account.
+
+- `POST /shops/create` crée une boutique en attente.
+- `POST /shops/update` vérifie le propriétaire avant de modifier les informations et les références du logo/couverture.
+- `POST /products/create` vérifie la boutique propriétaire, le type MIME réel des fichiers et le visuel principal.
+- `GET /moderation/queue` et `POST /moderation/approve` exigent un profil dont le rôle serveur est `admin`.
+- L’approbation attribue la lecture publique aux lignes et médias concernés. Le rejet retire la lecture publique des médias traités.
+- `POST /orders/create` relit produits et boutiques, vérifie les stocks, recalcule les montants, décrémente les stocks et écrit commande et lignes dans une transaction TablesDB.
+- `POST /seller/order-status` vérifie que le vendeur possède la boutique de la ligne, applique les transitions permises et recalcule le statut global de la commande.
+
+Les tables sensibles utilisent `rowSecurity: true`. Les commandes principales sont lisibles par l’acheteur; les lignes sont lisibles par l’acheteur et le vendeur concerné. Les données d’adresse et de téléphone ne sont pas exposées dans les lignes vendeur.
+
+Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la création par les utilisateurs connectés et accepte la lecture publique au niveau du bucket. La visibilité effective de chaque média dépend de ses permissions de fichier : les fichiers privés restent limités à leur propriétaire et les médias approuvés reçoivent `read("any")` par le serveur.
+
+## Vérifications observées le 18 novembre 2026
+
+- Schéma `shops` : `logo_file_id` et `cover_file_id` sont disponibles.
+- Schéma `products` : `media_file_ids` et `media_mime_types` sont disponibles en tableaux.
+- Tables `shops`, `products`, `orders`, `order_items`, `shopping_carts` et `cart_items` : aucune ligne métier présente lors du contrôle.
+- Table `profiles` : un profil administrateur est présent; sa ligne est protégée par des permissions individuelles.
+- Bucket `african_shop_media` : fichiers sécurisés, taille maximale 50 Mo, extensions image et vidéo déclarées.
+- Test d’exécution réel sans JWT sur `GET /moderation/queue` : HTTP 401 `Connexion requise.` avec le déploiement actif. Cela vérifie le démarrage et le garde d’authentification, pas le parcours administrateur authentifié.
+- Les fichiers JavaScript du front-end et de la fonction sont contrôlés syntaxiquement avant les commits.
+
+## Limites non vérifiées
+
+- Aucun compte acheteur ou vendeur de test n’a été utilisé pour un parcours complet authentifié.
+- Aucun téléversement réel de logo/couverture ou de galerie produit n’a été réalisé depuis l’interface.
+- Aucune boutique ni aucun produit n’étant présent, l’affichage réel des pages publiques et des médias n’a pas été validé avec des données.
+- Les validations administrateur n’ont pas été testées avec une session administrateur réelle.
+- Les commandes, transitions et réservations de stock n’ont pas été testées avec des comptes acheteur/vendeur réels.
+- Aucun paiement en ligne n’est configuré; paiement et livraison sont convenus directement entre acheteur et commerçant.
+- Aucun déploiement du site GitHub Pages n’est affirmé dans ce compte rendu.
 
 ## Fichiers principaux
 
-- `index.html` : configuration du SDK Appwrite et chargement de l'application.
-- `catalogue-appwrite.js` : charge uniquement les boutiques et produits validés depuis Appwrite, sans données de démonstration.
-- `commerce.js` : code e-mail OTP, espace vendeur multi-boutiques, création de boutiques, dépôt de médias et partage social.
-- `admin.js` : point d'entrée administratif; les actions sont gérées par `commerce.js`.
-- `app.js` : catalogue de démonstration et navigation existants.
-- `boutiques.js` : données de démonstration.
-
-## Important — état de migration
-
-La connexion Supabase a été retirée des fichiers principaux `index.html`, `commerce.js` et `admin.js`. La base Appwrite et le stockage sont créés.
-
-La lecture du catalogue public est maintenant reliée à TablesDB via `catalogue-appwrite.js`. Les données d'exemple locales sont masquées dès le chargement : seules les boutiques et produits `active` ayant des permissions de lecture publique peuvent apparaître. Chaque compte vendeur peut créer plusieurs boutiques indépendantes, sélectionner celle qu'il veut gérer et publier ses propres produits avec photos et vidéos. L'espace vendeur fournit des liens de partage de chaque boutique et de chaque produit vers WhatsApp, Facebook et par copie de lien. Les pages publiques sont alimentées par le catalogue Appwrite et n'affichent que les boutiques et produits validés. Le panier reste stocké localement sur l'appareil. La création de commande connectée passe désormais par la fonction serveur `POST /orders/create`, qui relit les produits et boutiques, vérifie leur état et le stock, puis recalcule les montants avant d'écrire `orders` et `order_items`. La commande principale est lisible par l'acheteur; chaque ligne est lisible par l'acheteur et le vendeur concerné, sans exposer au vendeur l'adresse et le téléphone stockés dans la commande principale. Les vendeurs peuvent modifier le statut de leurs propres lignes par `POST /seller/order-status`, avec des transitions contrôlées côté serveur. Les liens partagés ouvrent les pages de l'application ; l'affichage automatique d'une grande image ou fiche d'aperçu dans Facebook et WhatsApp demandera une couche de métadonnées Open Graph côté serveur. Le stock est contrôlé au moment de la commande mais n'est pas encore réservé ni décrémenté de manière transactionnelle; aucun paiement n'est collecté en ligne. Les produits et commandes repartent de zéro; aucune donnée de l'ancien Supabase n'a été copiée.
-
-## Fiche de boutique personnalisable
-
-- Les vendeurs peuvent modifier le nom, la catégorie, la ville, le quartier, le WhatsApp et la description de leur boutique.
-- Les champs Appwrite facultatifs `logo_file_id` et `cover_file_id` sont présents dans `shops`.
-- Les images de logo et de couverture sont déposées dans le bucket `african_shop_media`; le catalogue Appwrite récupère le logo et l'image de couverture pour les pages publiques.
-- La page publique `#/b/{id}` affiche maintenant la couverture lorsqu'elle existe. Les pages `#/b/{id}` et `#/p/{id}` sont bien reconnues par le routeur de `app.js`.
-- La modération et l'attribution des permissions publiques sont maintenant gérées par la fonction serveur après contrôle du rôle administrateur. Les tables `shops` et `products` gardent `rowSecurity: true`; seules les lignes approuvées doivent recevoir une permission `read("any")`. Aucun test authentifié d'approbation ni publication réelle de boutique n'a encore été réalisé.
-- Les modifications de code sont enregistrées dans GitHub. Le déploiement et le parcours réel de modification d'une boutique avec upload d'images restent à tester dans le navigateur.
-
-## État de la sécurisation de la modération — vérification du 14 novembre 2026
-
-- La fonction Appwrite `african-shop-api` est activée; son déploiement actif `6af874062b66adbd0029` est indiqué `ready` (Node 22).
-- Le routage de la fonction vers `/moderation/queue` est reconnu. Une exécution de contrôle sans session utilisateur répond HTTP 401 `Connexion requise.`, ce qui est le comportement attendu pour une route protégée; aucun test authentifié avec un compte administrateur n'a été réalisé.
-- Le code de création de profil contenait une faute `toISOstring()` qui empêchait l'initialisation d'un profil neuf. Elle est corrigée en `toISOString()`.
-- Les routes vendeur vérifient désormais que les fichiers logo, couverture et médias de produit portent une permission de lecture ou suppression attribuée au propriétaire avant de les associer à une boutique ou à un produit. Cela évite qu'un vendeur puisse publier le fichier privé d'un autre compte en devinant son identifiant.
-- Lorsqu'un vendeur remplace ou retire le logo ou la couverture d'une boutique déjà active, l'ancienne image perd sa permission publique après l'enregistrement; un échec de nettoyage est journalisé sans annuler la mise à jour.
-- Les tables `shops`, `products` et `orders` ont `rowSecurity: true`. Les boutiques et produits sont filtrés par `status = active` pour le catalogue. La base ne contient actuellement aucune boutique ni aucun produit; les tests réels d'approbation, de publication média et d'achat restent donc impossibles.
-- Les transitions de statut par ligne de commande sont contrôlées côté serveur. Le statut global d'une commande multi-boutiques n'est pas encore agrégé; le stock n'est pas réservé/décrémenté transactionnellement et aucun paiement en ligne n'est collecté. Aucune transaction d'achat réelle n'est déclarée opérationnelle.
-
-## Commandes et transitions sécurisées — vérification du 14 novembre 2026
-
-- La création d'une commande passe par la fonction Appwrite `african-shop-api` via `POST /orders/create`. Le serveur relit chaque produit et sa boutique, vérifie leur statut actif et le stock courant, recalcule les prix et le total depuis TablesDB, puis écrit la commande et ses lignes.
-- La commande principale est lisible par l'acheteur uniquement. Chaque ligne est lisible par l'acheteur et le propriétaire de la boutique concernée; les données d'adresse et de téléphone de livraison ne sont pas exposées dans les lignes vendeur.
-- Les vendeurs font évoluer l'état de leurs propres lignes via `POST /seller/order-status`. Le serveur vérifie la propriété de la boutique et n'accepte que les transitions prévues : à confirmer → confirmée/refusée → préparation → prête au retrait ou en livraison → livrée.
-- En cas d'échec pendant l'écriture de la commande, le serveur tente de supprimer les lignes déjà créées puis la commande principale.
-- Limites restantes : le stock est vérifié mais pas réservé ni décrémenté de manière transactionnelle; des commandes simultanées peuvent donc encore dépasser le stock. Le statut global de la commande multi-boutiques n'est pas recalculé à partir des lignes. Aucun paiement en ligne n'est collecté.
-- Les tests authentifiés de création et de changement d'état nécessitent une session utilisateur réelle. Les exécutions de contrôle sans session confirment que `/moderation/queue`, `/orders/create` et `/seller/order-status` sont rejetées en HTTP 401.
-
-## Démarrage local
-
-```bash
-git clone https://github.com/lokononbeno-sketch/African-shop-.git
-cd African-shop-
-npx serve .
-``
-
-## Sécurité avant production
-
-- Vérifier les permissions de chaque table et de chaque ligne.
-- Ne jamais faire confiance à un rôle administrateur stocké sans contrôle serveur.
-- Ne jamais exposer une clé API secrète ou service_role dans le navigateur.
-- Tester l'authentification, les médias, les droits vendeurs et les commandes avant de publier.
-
-## Commandes, stock et modération — 15 novembre 2026
-
-- L'appel du service sécurisé depuis le navigateur transmet explicitement le JWT de la session Appwrite dans l'en-tête `x-appwrite-user-jwt`; la fonction vérifie ensuite la session avec l'endpoint Account.
-- La création d'une commande utilise une transaction TablesDB : validation des produits et boutiques, décrément atomique de `products.stock_quantity` avec une borne minimale de zéro, création de la commande et de ses lignes, puis validation unique de la transaction. Un conflit de stock annule l'ensemble des écritures.
-- Les changements de statut vendeur sont transactionnels. Le statut de la commande principale est recalculé à partir des statuts de ses lignes (`pending_confirmation`, `confirmed`, `preparing`, `ready_for_pickup`, `out_for_delivery`, `delivered`, `rejected`, `cancelled`, `partially_rejected`).
-- La modération refuse les éléments qui ne sont plus en attente. Le rejet d'une boutique rejette aussi ses produits et retire la lecture publique de leurs médias.
-- Test technique effectué dans Appwrite le 15/11/2026 : une ligne produit temporaire avec un stock de 2 a été décrémentée de 1 par une opération transactionnelle; le résultat lu était 1. La ligne de test a ensuite été supprimée.
-- Limites non levées : aucun compte acheteur/vendeur de test n'est disponible dans cette exécution, et les tables de production sont vides. Le parcours complet d'achat, les transitions depuis l'interface et le paiement réel ne sont donc pas déclarés testés. Aucun paiement en ligne n'est configuré.
-
-- Couche de compatibilité TablesDB : les réponses de lignes sont normalisées qu'Appwrite fournisse les colonnes à plat ou dans `data`. Les listes, lectures, créations et mises à jour serveur utilisent le même format interne.
-- Vérification de forme le 15/11/2026 : les réponses du connecteur TablesDB exposaient les colonnes sous `data`; le normaliseur est donc appliqué à toutes les opérations de lignes de l'API.
-- Déploiement Appwrite actif au 15/11/2026 : `6af9bb06d09cbd03dfc2` (état `ready`, runtime Node 22). Un appel anonyme à `POST /orders/create` a été exécuté après activation et a renvoyé `401 Connexion requise`, ce qui confirme le démarrage du nouveau déploiement et le contrôle d'authentification. Ce test ne valide pas un achat authentifié.
-
-
-## Galerie médias des produits — 17 novembre 2026
-
-- La table `products` possède le champ facultatif `media_mime_types` (tableau de chaînes, un type MIME par élément de `media_file_ids`). La colonne Appwrite est disponible depuis le 17/11/2026.
-- La création d'un produit vérifie côté serveur que chaque fichier appartient au vendeur et que son type MIME réel est l'un des formats autorisés : JPEG, PNG, WebP, GIF, MP4, WebM ou QuickTime/MOV. Le visuel principal doit être une image.
-- L'interface vendeur limite l'envoi à 12 fichiers de 50 Mo maximum et supprime les fichiers nouvellement téléversés si l'enregistrement du produit ou de la fiche boutique échoue.
-- Le catalogue prépare une URL de visualisation pour les images et une URL de téléchargement/lecture pour les vidéos. La fiche publique d'un produit affiche la galerie complète au lieu d'ignorer les médias secondaires.
-- Aucun produit n'existe actuellement dans la base. L'affichage d'une galerie réelle, la lecture d'une vidéo depuis un compte public et le parcours d'upload authentifié restent à tester après déploiement.
-
-
-## Déploiement de la galerie médias — 17 novembre 2026
-
-- La fonction `african-shop-api` a été redéployée avec la validation serveur des types MIME et l'enregistrement de `media_mime_types`. Déploiement actif : `6afc5369e56affa56c92` (Node.js 22, état `ready`).
-- Vérification d'exécution sans JWT sur `GET /moderation/queue` : HTTP 401 `Connexion requise.`, depuis le déploiement actif. Ce contrôle confirme le démarrage de la fonction et le garde d'authentification, mais ne remplace pas un test avec un compte vendeur.
-- La table `products` expose maintenant `media_mime_types` comme tableau de varchar (120 caractères), état Appwrite `available`.
-- Aucun compte de test vendeur/acheteur et aucun produit ne sont présents. Les uploads authentifiés, la lecture publique des vidéos et le parcours complet d'achat restent non vérifiés.
+- `index.html` : SDK Appwrite et configuration du projet.
+- `commerce.js` : authentification, espace vendeur, modération et commandes.
+- `functions/african-shop-api/index.js` : API serveur et contrôles d’accès.
+- `catalogue-appwrite.js` : synchronisation du catalogue public.
+- `app.js` : pages publiques et navigation.
+- `admin.js` : point d’entrée administratif.
