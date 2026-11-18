@@ -29,7 +29,7 @@ La connexion téléphonique est affichée comme indisponible dans l’interface 
 
 ## API serveur et sécurité
 
-La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Au 18 novembre 2026, le déploiement actif vérifié est `6afc5369e56affa56c92`, état `ready`. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write.
+La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Au 18 novembre 2026, le déploiement actif vérifié est `6afdaeb17bc20a729517`, état `ready`. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write.
 
 Toutes les routes métier exigent un JWT de session Appwrite transmis dans `x-appwrite-user-jwt`. La fonction vérifie ce JWT auprès de l’endpoint Account.
 
@@ -43,7 +43,7 @@ Toutes les routes métier exigent un JWT de session Appwrite transmis dans `x-ap
 
 Les tables sensibles utilisent `rowSecurity: true`. Les commandes principales sont lisibles par l’acheteur; les lignes sont lisibles par l’acheteur et le vendeur concerné. Les données d’adresse et de téléphone ne sont pas exposées dans les lignes vendeur.
 
-Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la création par les utilisateurs connectés et accepte la lecture publique au niveau du bucket. La visibilité effective de chaque média dépend de ses permissions de fichier : les fichiers privés restent limités à leur propriétaire et les médias approuvés reçoivent `read("any")` par le serveur.
+Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la création par les utilisateurs connectés et accepte la lecture publique au niveau du bucket. La visibilité effective de chaque média dépend de ses permissions de fichier : les fichiers privés restent limités à leur propriétaire et les médias approuvés reçoivent `read("any")` par le serveur. Avant toute association à une boutique ou à un produit, le serveur exige que le compte vendeur possède à la fois les permissions de lecture et de suppression sur le fichier; un média simplement partagé en lecture seule ne peut pas être republié par ce vendeur.
 
 ## Vérifications observées le 18 novembre 2026
 
