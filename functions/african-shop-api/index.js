@@ -103,6 +103,13 @@ async function decrementRowColumn(ctx, table, rowId, column, value, transactionI
   return appwriteRequest(ctx, withTransaction(path, transactionId), 'PATCH', { value, min });
 }
 
+async function incrementRowColumn(ctx, table, rowId, column, value, transactionId, max) {
+  const path = tablePath(table) + '/' + encodeURIComponent(rowId) + '/' + encodeURIComponent(column) + '/increment';
+  const payload = { value };
+  if (max !== undefined) payload.max = max;
+  return appwriteRequest(ctx, withTransaction(path, transactionId), 'PATCH', payload);
+}
+
 function aggregateOrderStatus(items) {
   const statuses = (items || []).map(item => item.status || 'pending_confirmation');
   if (!statuses.length || statuses.includes('pending_confirmation')) return 'pending_confirmation';
@@ -439,6 +446,15 @@ async function handle({ req, res, log, error }) {
         const currentStatus = item.status || 'pending_confirmation';
         if (!(transitions[currentStatus] || []).includes(nextStatus)) {
           throw new HttpError('Cette transition de commande n’est pas autorisée.', 409);
+        }
+        if (nextStatus === 'rejected') {
+          const product = await getRow(ctx, 'products', item.product_id, transaction.$id);
+          const quantity = Number(item.quantity);
+          if (!product || product.shop_id !== item.shop_id ||
+              !Number.isSafeInteger(quantity) || quantity < 1) {
+            throw new HttpError('Impossible de restaurer le stock de cette ligne de commande.', 409);
+          }
+          await incrementRowColumn(ctx, 'products', product.$id, 'stock_quantity', quantity, transaction.$id);
         }
         const order = await getRow(ctx, 'orders', item.order_id, transaction.$id);
         await updateRow(ctx, 'orders', order.$id, { status: order.status || 'pending_confirmation' }, order.$permissions, transaction.$id);
