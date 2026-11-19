@@ -29,7 +29,7 @@ La connexion téléphonique est affichée comme indisponible dans l’interface 
 
 ## API serveur et sécurité
 
-La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Au 18 novembre 2026, le déploiement actif vérifié est `6afdaeb17bc20a729517`, état `ready`. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write.
+La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Au 19 novembre 2026, le déploiement Appwrite actif reste `6afdaeb17bc20a729517`, état `ready`. Les changements API du commit GitHub `6c00519c` ne sont pas encore déployés. La fonction n’est pas reliée à un dépôt VCS Appwrite (`providerRepositoryId` vide) : un déploiement manuel du code empaqueté sera nécessaire. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write.
 
 Toutes les routes métier exigent un JWT de session Appwrite transmis dans `x-appwrite-user-jwt`. La fonction vérifie ce JWT auprès de l’endpoint Account.
 
@@ -45,7 +45,7 @@ Les tables sensibles utilisent `rowSecurity: true`. Les commandes principales so
 
 Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la création par les utilisateurs connectés et accepte la lecture publique au niveau du bucket. La visibilité effective de chaque média dépend de ses permissions de fichier : les fichiers privés restent limités à leur propriétaire et les médias approuvés reçoivent `read("any")` par le serveur. Avant toute association à une boutique ou à un produit, le serveur exige que le compte vendeur possède à la fois les permissions de lecture et de suppression sur le fichier; un média simplement partagé en lecture seule ne peut pas être republié par ce vendeur.
 
-## Vérifications observées le 18 novembre 2026
+## Vérifications observées le 19 novembre 2026
 
 - Schéma `shops` : `logo_file_id` et `cover_file_id` sont disponibles.
 - Schéma `products` : `media_file_ids` et `media_mime_types` sont disponibles en tableaux.
@@ -53,7 +53,7 @@ Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la créati
 - Table `profiles` : un profil administrateur est présent; sa ligne est protégée par des permissions individuelles.
 - Bucket `african_shop_media` : fichiers sécurisés, taille maximale 50 Mo, extensions image et vidéo déclarées.
 - Test d’exécution réel sans JWT sur `GET /moderation/queue` : HTTP 401 `Connexion requise.` avec le déploiement actif. Cela vérifie le démarrage et le garde d’authentification, pas le parcours administrateur authentifié.
-- Les fichiers JavaScript du front-end et de la fonction sont contrôlés syntaxiquement avant les commits.
+- Le 19 novembre, les fichiers `functions/african-shop-api/index.js` et `catalogue-appwrite.js` ont passé un contrôle de syntaxe après les derniers changements GitHub. Ces changements ne sont pas inclus dans le déploiement Appwrite actif.
 
 - Lorsqu’un vendeur refuse une ligne encore en attente, le serveur restaure atomiquement la quantité réservée dans le stock, dans la même transaction que le changement de statut.
 - Le catalogue ne vide plus les données déjà affichées avant le chargement Appwrite : il remplace les listes après le succès des deux lectures et ignore les réponses d’un rafraîchissement devenu obsolète.
