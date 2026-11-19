@@ -16,9 +16,9 @@
       return url.href;
     }catch(e){return "";}
   };
+  let loadSequence=0;
   async function load(){
-    BOUTIQUES.splice(0,BOUTIQUES.length);
-    PRODUITS.splice(0,PRODUITS.length);
+    const sequence=++loadSequence;
     try{
       const [shopsResult,productsResult]=await Promise.all([
         tables.listRows({databaseId:C.databaseId,tableId:"shops",queries:[Query.equal("status","active"),Query.limit(100)]}),
@@ -48,11 +48,13 @@
           description:p.description||""
         };
       });
+      if(sequence!==loadSequence)return;
       BOUTIQUES.splice(0,BOUTIQUES.length,...shops);
       PRODUITS.splice(0,PRODUITS.length,...products);
       window.dispatchEvent(new Event("hashchange"));
       window.dispatchEvent(new CustomEvent("africanshop:catalog-loaded",{detail:{shops:shops.length,products:products.length}}));
     }catch(error){
+      if(sequence!==loadSequence)return;
       console.error("African Shop : catalogue Appwrite indisponible",error);
       window.dispatchEvent(new CustomEvent("africanshop:catalog-error",{detail:{message:error.message||"Erreur de lecture Appwrite"}}));
     }
