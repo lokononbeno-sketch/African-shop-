@@ -55,6 +55,9 @@ Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la créati
 - Test d’exécution réel sans JWT sur `GET /moderation/queue` : HTTP 401 `Connexion requise.` avec le déploiement actif. Cela vérifie le démarrage et le garde d’authentification, pas le parcours administrateur authentifié.
 - Les fichiers JavaScript du front-end et de la fonction sont contrôlés syntaxiquement avant les commits.
 
+- Lorsqu’un vendeur refuse une ligne encore en attente, le serveur restaure atomiquement la quantité réservée dans le stock, dans la même transaction que le changement de statut.
+- Le catalogue ne vide plus les données déjà affichées avant le chargement Appwrite : il remplace les listes après le succès des deux lectures et ignore les réponses d’un rafraîchissement devenu obsolète.
+
 ## Limites non vérifiées
 
 - Aucun compte acheteur ou vendeur de test n’a été utilisé pour un parcours complet authentifié.
