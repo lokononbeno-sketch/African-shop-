@@ -53,7 +53,7 @@ Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la créati
 - Table `profiles` : un profil administrateur est présent; sa ligne est protégée par des permissions individuelles.
 - Bucket `african_shop_media` : fichiers sécurisés, taille maximale 50 Mo, extensions image et vidéo déclarées.
 - Test d’exécution réel sans JWT sur `GET /moderation/queue` après activation du déploiement `6b0048f6a3bd4b78da28` : HTTP 401 `Connexion requise.`. Le même résultat a été obtenu avant activation. Cela vérifie le démarrage, la disponibilité de la clé éphémère Appwrite et le garde d’authentification, mais pas le parcours administrateur authentifié.
-- Le 19 novembre, les fichiers `functions/african-shop-api/index.js` et `catalogue-appwrite.js` ont passé un contrôle de syntaxe après les derniers changements GitHub. Ces changements ne sont pas inclus dans le déploiement Appwrite actif.
+- Le 20 novembre, `functions/african-shop-api/index.js` a passé un contrôle de syntaxe puis a été déployé depuis GitHub `main`; le build Appwrite est `ready` et ce déploiement est actif. `catalogue-appwrite.js` avait passé son contrôle de syntaxe le 19 novembre.
 
 - Lorsqu’un vendeur refuse une ligne encore en attente, le serveur restaure atomiquement la quantité réservée dans le stock, dans la même transaction que le changement de statut.
 - Le catalogue ne vide plus les données déjà affichées avant le chargement Appwrite : il remplace les listes après le succès des deux lectures et ignore les réponses d’un rafraîchissement devenu obsolète.
