@@ -29,7 +29,7 @@ La connexion téléphonique est affichée comme indisponible dans l’interface 
 
 ## API serveur et sécurité
 
-La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Au 19 novembre 2026, le déploiement Appwrite actif reste `6afdaeb17bc20a729517`, état `ready`. Les changements API du commit GitHub `6c00519c` ne sont pas encore déployés. La fonction n’est pas reliée à un dépôt VCS Appwrite (`providerRepositoryId` vide) : un déploiement manuel du code empaqueté sera nécessaire. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write.
+La fonction Appwrite `african-shop-api` est activée sur Node.js 22. Le 20 novembre 2026, le déploiement Appwrite actif est `6b0048f6a3bd4b78da28`, état `ready`. Il a été construit depuis l’archive publique du dépôt GitHub `main`, après contrôle du build. La fonction n’est pas reliée à un dépôt VCS Appwrite (`providerRepositoryId` vide) : les prochaines versions nécessiteront encore un déploiement manuel. La fonction dispose des scopes TablesDB rows read/write et Storage files read/write. Appwrite fournit automatiquement à chaque exécution la clé éphémère dans l’en-tête `x-appwrite-key`; l’absence de variables d’environnement personnalisées (`vars: []`) est normale et ne signale pas une configuration manquante.
 
 Toutes les routes métier exigent un JWT de session Appwrite transmis dans `x-appwrite-user-jwt`. La fonction vérifie ce JWT auprès de l’endpoint Account.
 
@@ -45,14 +45,14 @@ Les tables sensibles utilisent `rowSecurity: true`. Les commandes principales so
 
 Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la création par les utilisateurs connectés et accepte la lecture publique au niveau du bucket. La visibilité effective de chaque média dépend de ses permissions de fichier : les fichiers privés restent limités à leur propriétaire et les médias approuvés reçoivent `read("any")` par le serveur. Avant toute association à une boutique ou à un produit, le serveur exige que le compte vendeur possède à la fois les permissions de lecture et de suppression sur le fichier; un média simplement partagé en lecture seule ne peut pas être republié par ce vendeur.
 
-## Vérifications observées le 19 novembre 2026
+## Vérifications observées le 20 novembre 2026
 
 - Schéma `shops` : `logo_file_id` et `cover_file_id` sont disponibles.
 - Schéma `products` : `media_file_ids` et `media_mime_types` sont disponibles en tableaux.
 - Tables `shops`, `products`, `orders`, `order_items`, `shopping_carts` et `cart_items` : aucune ligne métier présente lors du contrôle.
 - Table `profiles` : un profil administrateur est présent; sa ligne est protégée par des permissions individuelles.
 - Bucket `african_shop_media` : fichiers sécurisés, taille maximale 50 Mo, extensions image et vidéo déclarées.
-- Test d’exécution réel sans JWT sur `GET /moderation/queue` : HTTP 401 `Connexion requise.` avec le déploiement actif. Cela vérifie le démarrage et le garde d’authentification, pas le parcours administrateur authentifié.
+- Test d’exécution réel sans JWT sur `GET /moderation/queue` après activation du déploiement `6b0048f6a3bd4b78da28` : HTTP 401 `Connexion requise.`. Le même résultat a été obtenu avant activation. Cela vérifie le démarrage, la disponibilité de la clé éphémère Appwrite et le garde d’authentification, mais pas le parcours administrateur authentifié.
 - Le 19 novembre, les fichiers `functions/african-shop-api/index.js` et `catalogue-appwrite.js` ont passé un contrôle de syntaxe après les derniers changements GitHub. Ces changements ne sont pas inclus dans le déploiement Appwrite actif.
 
 - Lorsqu’un vendeur refuse une ligne encore en attente, le serveur restaure atomiquement la quantité réservée dans le stock, dans la même transaction que le changement de statut.
@@ -63,7 +63,7 @@ Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la créati
 - Aucun compte acheteur ou vendeur de test n’a été utilisé pour un parcours complet authentifié.
 - Aucun téléversement réel de logo/couverture ou de galerie produit n’a été réalisé depuis l’interface.
 - Aucune boutique ni aucun produit n’étant présent, l’affichage réel des pages publiques et des médias n’a pas été validé avec des données.
-- Les validations administrateur n’ont pas été testées avec une session administrateur réelle.
+- Les validations administrateur n’ont pas été testées avec une session administrateur réelle. La fonction renvoie bien HTTP 401 sans JWT; le test d’accès autorisé reste à effectuer avec un compte administrateur.
 - Les commandes, transitions et réservations de stock n’ont pas été testées avec des comptes acheteur/vendeur réels.
 - Aucun paiement en ligne n’est configuré; paiement et livraison sont convenus directement entre acheteur et commerçant.
 - Aucun déploiement du site GitHub Pages n’est affirmé dans ce compte rendu.
