@@ -58,6 +58,13 @@ Le bucket `african_shop_media` utilise `fileSecurity: true`, autorise la créati
 - Lorsqu’un vendeur refuse une ligne encore en attente, le serveur restaure atomiquement la quantité réservée dans le stock, dans la même transaction que le changement de statut.
 - Le catalogue ne vide plus les données déjà affichées avant le chargement Appwrite : il remplace les listes après le succès des deux lectures et ignore les réponses d’un rafraîchissement devenu obsolète.
 
+## État Appwrite observé le 21 novembre 2026
+
+- La première lecture du projet Appwrite ce jour a échoué avec HTTP 403, type `project_paused` : Appwrite indique que le projet est suspendu pour inactivité et doit être restauré depuis la console.
+- En conséquence, aucun schéma de table, nombre de lignes, paramètre de bucket, état de fonction ou déploiement n'a pu être relu pendant cette exécution. Aucune modification Appwrite ni aucun test authentifié n'a été tenté après ce blocage.
+- Le déploiement `6b0048f6a3bd4b78da28` reste le dernier déploiement consigné comme actif lors du contrôle du 20 novembre 2026; son état courant n'est pas vérifiable tant que le projet est suspendu.
+- Action requise avant de poursuivre les tests : le propriétaire du projet doit restaurer `6af6ffad001c6379a9da` dans la console Appwrite. Après restauration, vérifier à nouveau les permissions et le déploiement avant toute opération d'écriture.
+
 ## Limites non vérifiées
 
 - Aucun compte acheteur ou vendeur de test n’a été utilisé pour un parcours complet authentifié.
