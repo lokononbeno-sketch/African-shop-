@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+  --color-canvas: #FAF5EC;
+  --color-sand: #F2E7D5;
+  --color-surface: #FFFDF9;
+  --color-cocoa: #1C1410;
+  --color-cocoa-deep: #130D0A;
+  --color-indigo-wax: #1A2744;
+  --color-terracotta: #C84B24;
+  --color-terracotta-dark: #A63B1A;
+  --color-gold: #D9911A;
+  --color-gold-light: #F2BE4B;
+  --color-savanna: #1B6B4A;
+  --color-savanna-dark: #135238;
+  --color-ink: #1E1612;
+  --color-ink-muted: #6E5B4E;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    background-color: #FAF5EC;
+    color: #1E1612;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #FAF5EC;
+    background-image:
+      radial-gradient(60rem 36rem at 92% -6%, rgba(217, 145, 26, 0.12), transparent 62%),
+      radial-gradient(48rem 32rem at -8% 18%, rgba(200, 75, 36, 0.08), transparent 60%);
+    color: #1E1612;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: "Fraunces", Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle Bogolan mudcloth geometric weave background for editorial sections */
+.bg-bogolan-light {
+  background-image: url("data:image/svg+xml,%3Csvg width='56' height='56' viewBox='0 0 56 56' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23C84B24' stroke-opacity='0.065' stroke-width='1.1'%3E%3Cpath d='M28 4L52 28L28 52L4 28Z'/%3E%3Cpath d='M28 14L42 28L28 42L14 28Z'/%3E%3Ccircle cx='28' cy='28' r='2.2' fill='%23D9911A' fill-opacity='0.11' stroke='none'/%3E%3Cpath d='M0 0L8 8M56 0L48 8M0 56L8 48M56 56L48 48'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.bg-bogolan-dark {
+  background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23F2BE4B' stroke-opacity='0.09' stroke-width='1'%3E%3Cpath d='M32 6L58 32L32 58L6 32Z'/%3E%3Cpath d='M32 18L46 32L32 46L18 32Z'/%3E%3Cpath d='M0 32H12M52 32H64M32 0V12M32 52V64'/%3E%3Ccircle cx='32' cy='32' r='2.5' fill='%23D9911A' fill-opacity='0.22' stroke='none'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Sculpted Kente-inspired horizontal woven border */
+.kente-strip {
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    #C84B24 0px,
+    #C84B24 22px,
+    #EAB338 22px,
+    #EAB338 36px,
+    #1B6B4A 36px,
+    #1B6B4A 54px,
+    #1A2744 54px,
+    #1A2744 68px,
+    #FAF5EC 68px,
+    #FAF5EC 74px
+  );
+}
+
+/* Custom organic African arch card shape */
+.arch-frame {
+  border-top-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-left-radius: 1.5rem;
+  border-bottom-right-radius: 1.5rem;
+}
+
+.arch-soft {
+  border-top-left-radius: 2.25rem;
+  border-top-right-radius: 2.25rem;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Warm craft elevation shadows */
+.shadow-craft {
+  box-shadow: 0 12px 32px -10px rgba(30, 22, 18, 0.1), 0 2px 6px rgba(30, 22, 18, 0.04);
+}
+.shadow-craft-hover {
+  box-shadow: 0 22px 44px -12px rgba(200, 75, 36, 0.18), 0 4px 12px rgba(30, 22, 18, 0.06);
+}
